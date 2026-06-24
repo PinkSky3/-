@@ -24,9 +24,10 @@ class News60sViewModel : ViewModel() {
 
     private val apiBases = listOf(
         "https://60s.viki.moe",
+        "https://60s.crystelf.top",
         "https://api.yanyua.icu",
         "https://60s.7se.cn",
-        "https://60s.crystelf.top"
+        "https://60s.superjeason.qzz.io"
     )
 
     private val _uiState = MutableStateFlow<News60sUiState>(News60sUiState.Loading)

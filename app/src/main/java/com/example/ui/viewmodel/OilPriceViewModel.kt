@@ -29,11 +29,13 @@ sealed interface OilPriceUiState {
 
 class OilPriceViewModel : ViewModel() {
 
-    private val apiBases = listOf(
-        "https://60s.viki.moe",
-        "https://api.yanyua.icu",
-        "https://60s.7se.cn",
-        "https://60s.crystelf.top"
+    private val apiEndpoints = listOf(
+        OilPriceEndpoint("https://60s.viki.moe/v2/fuel-price"),
+        OilPriceEndpoint("https://api.nxvav.cn/api/fuel-price/"),
+        OilPriceEndpoint("https://api.yanyua.icu/v2/fuel-price"),
+        OilPriceEndpoint("https://60s.7se.cn/v2/fuel-price"),
+        OilPriceEndpoint("https://60s.superjeason.qzz.io/v2/fuel-price"),
+        OilPriceEndpoint("https://60s.crystelf.top/v2/fuel-price")
     )
 
     private val _selectedProvince = MutableStateFlow(PROVINCES[10])
@@ -71,9 +73,9 @@ class OilPriceViewModel : ViewModel() {
             var lastError: String? = null
             try {
                 val encodedProvince = URLEncoder.encode(province, StandardCharsets.UTF_8.name())
-                for (base in apiBases) {
+                for (endpoint in apiEndpoints) {
                     try {
-                        val response = RetrofitClient.oilPriceApi.fetch("$base/v2/fuel-price?region=$encodedProvince")
+                        val response = RetrofitClient.oilPriceApi.fetch(endpoint.url(encodedProvince))
                         if (response.isSuccessful) {
                             val body = response.body()?.string()
                             if (body != null) {
@@ -87,13 +89,13 @@ class OilPriceViewModel : ViewModel() {
                                     )
                                     return@launch
                                 }
-                                lastError = "\u63A5\u53E3\u8FD4\u56DE\u7A7A\u6CB9\u4EF7: $base"
+                                lastError = "\u63A5\u53E3\u8FD4\u56DE\u7A7A\u6CB9\u4EF7: ${endpoint.baseUrl}"
                             }
                         } else {
-                            lastError = "HTTP ${response.code()}: $base"
+                            lastError = "HTTP ${response.code()}: ${endpoint.baseUrl}"
                         }
                     } catch (e: Exception) {
-                        lastError = "$base ${e.localizedMessage ?: e.message ?: "\u672A\u77E5\u9519\u8BEF"}"
+                        lastError = "${endpoint.baseUrl} ${e.localizedMessage ?: e.message ?: "\u672A\u77E5\u9519\u8BEF"}"
                     }
                 }
                 _uiState.value = OilPriceUiState.Error(
@@ -105,6 +107,12 @@ class OilPriceViewModel : ViewModel() {
                 )
             }
         }
+    }
+
+    private data class OilPriceEndpoint(
+        val baseUrl: String
+    ) {
+        fun url(encodedRegion: String): String = "$baseUrl?region=$encodedRegion"
     }
 
     private data class ParsedOilPrice(

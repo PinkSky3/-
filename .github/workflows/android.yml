@@ -49,15 +49,10 @@ jobs:
 
     - name: Create CI env from GitHub Secrets
       env:
-        ALLHOT_API_KEY: ${{ secrets.ALLHOT_API_KEY }}
-        ALLHOT_BACKUP_API_KEY: ${{ secrets.ALLHOT_BACKUP_API_KEY }}
-        ALLHOT_PROXY_BASE_URL: ${{ vars.ALLHOT_PROXY_BASE_URL }}
+        PEAR_AI_API_KEY: ${{ secrets.PEAR_AI_API_KEY }}
       run: |
         {
-          echo "AI_API_KEY=CI_PLACEHOLDER"
-          echo "ALLHOT_API_KEY=${ALLHOT_API_KEY:-CI_PLACEHOLDER}"
-          echo "ALLHOT_BACKUP_API_KEY=${ALLHOT_BACKUP_API_KEY:-CI_PLACEHOLDER}"
-          echo "ALLHOT_PROXY_BASE_URL=${ALLHOT_PROXY_BASE_URL:-CI_PLACEHOLDER}"
+          echo "AI_API_KEY=${PEAR_AI_API_KEY:-CI_PLACEHOLDER}"
         } > .env
 
     - name: Build Debug APK

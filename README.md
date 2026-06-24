@@ -1,6 +1,6 @@
 # 综合资讯 · DailyHot-Android
 
-**综合资讯 (DailyHot-Android)** 是一款个人日常信息聚合 Android 客户端，聚合全网多平台热搜榜单、AllHot 全量热搜、AI 日报、60 秒快新闻、实时油价/金价数据，并集成 AI 问答功能，一站式满足日常信息获取需求。
+**综合资讯 (DailyHot-Android)** 是一款个人日常信息聚合 Android 客户端，聚合全网多平台热搜榜单、60 秒快新闻、实时油价/金价数据，并集成 AI 问答功能，一站式满足日常信息获取需求。
 
 ## 功能特性
 
@@ -24,26 +24,11 @@
 - 内置 WebView 预加载，点击即可快速预览原文
 - 支持 **复制链接** 和 **系统分享** 到其他应用
 
-### 热搜-全面版
-
-- 接入 **AllHot Open API**，独立于基础热搜板块展示更完整的数据源
-- 来源分类根据 AllHot `/sources` 返回的 `type/title` 动态生成，不复用基础热搜的平台分类
-- 提供独立来源选择界面，支持按分类快速筛选 600+ 数据源
-- 对 `其他` 来源继续细分为 AI、开发技术、数码科技、财经商业、电商消费、体育、汽车、教育学习、设计产品、海外，以及 `其他·中文/英文/数字` 等子类
-- 榜单请求按来源做内存缓存：首次进入或首次选择来源时请求一次，切换分类不请求榜单，右上角刷新才强制重新拉取当前来源
-- 支持主/备用 AllHot key，主 key 不可用时自动切换备用 key
-
-### AI 日报
-
-- 顶部导航中位于 `60S` 后方
-- 独立打开 AllHot `https://allhot.top/daily-report` 日报模板
-- 支持右上角刷新重新加载日报页面
-
 ### 实时油价
 
 - 查询 **全国 31 个省/自治区/直辖市** 最新油价
 - 支持 **92#、95#、98# 汽油** 和 **0# 柴油**
-- 数据来源：Pear API（每日更新）
+- 数据来源：60s API，内置 AA1/NXVAV 公开接口兜底
 - 自动定位省份，切换即查
 
 ### 实时金价
@@ -79,9 +64,6 @@
 
 ```bash
 AI_API_KEY=sk-xxx
-ALLHOT_API_KEY=your-allhot-api-key
-ALLHOT_BACKUP_API_KEY=your-backup-allhot-api-key
-ALLHOT_PROXY_BASE_URL=
 ```
 
 构建 Debug APK：
@@ -98,25 +80,21 @@ app/build/outputs/apk/debug/app-debug.apk
 
 ## GitHub Actions 配置
 
-API key 不应写入源码。仓库默认 GitHub Actions 会从 GitHub Secrets 注入 AllHot 主/备用 key，生成安装后可直接使用 `热搜-全面版` 的 Debug APK；workflow 和仓库文件中不会出现 key 明文。
+API key 不应写入源码。AI 问答使用的 key 可通过 GitHub Secrets 或本地 `.env` 注入；workflow 和仓库文件中不会出现 key 明文。
 
 如果需要私有构建或本地调试，在仓库 `Settings -> Secrets and variables -> Actions` 或本地 `.env` 中配置：
 
 | Name | Value |
 | --- | --- |
 | `PEAR_AI_API_KEY` | `sk-xxx` |
-| `ALLHOT_API_KEY` | `your-allhot-api-key` |
-| `ALLHOT_BACKUP_API_KEY` | `your-backup-allhot-api-key` |
-| `ALLHOT_PROXY_BASE_URL` | 可选，服务端 AllHot 代理地址 |
 
-热搜请求会优先尝试 `ALLHOT_PROXY_BASE_URL` 代理；未配置代理时使用 `ALLHOT_API_KEY`，主 key 不可用时自动切换到 `ALLHOT_BACKUP_API_KEY`。
-
-注意：GitHub Secrets 可以保证仓库不出现明文 key，但如果把 key 注入 APK，逆向 APK 仍有提取风险。若需要同时保护 APK 内部密钥，请部署服务端代理，把真实 AllHot key 放在代理服务环境变量中，APK 只配置 `ALLHOT_PROXY_BASE_URL`。
+注意：GitHub Secrets 可以保证仓库不出现明文 key，但如果把 key 注入 APK，逆向 APK 仍有提取风险。若需要保护 APK 内部密钥，请部署服务端代理，把真实 key 放在代理服务环境变量中。
 
 ## 数据来源
 
-- 热搜聚合：`api.allhot.top`
-- 油价 / 60 秒新闻 / AI 问答：`api.pearapi.ai`
+- 热搜聚合：`dailyhotapi.3yu3.top`
+- 60 秒新闻 / 油价：`60s.viki.moe` 及公开备用实例，油价额外兜底 `api.nxvav.cn`
+- AI 问答：`api.pearapi.ai`
 - 金价：`tmini.net`、`api.freejk.com`、`v2.xxapi.cn`
 
 ---
