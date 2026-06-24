@@ -502,17 +502,19 @@ fun ModeToggle(
         shape = RoundedCornerShape(10.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
     ) {
-        LazyRow(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = 3.dp, vertical = 3.dp),
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 3.dp, vertical = 3.dp),
             horizontalArrangement = Arrangement.spacedBy(3.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            items(options, key = { it.mode.name }) { option ->
+            options.forEach { option ->
                 ModeToggleItem(
                     option = option,
                     selected = mode == option.mode,
-                    onSelected = { onModeChange(option.mode) }
+                    onSelected = { onModeChange(option.mode) },
+                    modifier = Modifier.weight(1f)
                 )
             }
         }
@@ -529,7 +531,8 @@ private data class DashboardModeOption(
 private fun ModeToggleItem(
     option: DashboardModeOption,
     selected: Boolean,
-    onSelected: () -> Unit
+    onSelected: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val bg by animateColorAsState(
         targetValue = if (selected) option.color else Color.Transparent,
@@ -541,7 +544,7 @@ private fun ModeToggleItem(
     )
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxHeight()
             .clip(RoundedCornerShape(8.dp))
             .background(bg)
