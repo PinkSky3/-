@@ -77,9 +77,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -843,7 +840,6 @@ private fun WeatherSummaryCard(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun WeatherQueryCard(
     selectedProvince: String,
@@ -863,29 +859,25 @@ private fun WeatherQueryCard(
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(8.dp))
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = it },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                OutlinedTextField(
-                    value = selectedProvince,
-                    onValueChange = {},
-                    readOnly = true,
-                    singleLine = true,
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                    placeholder = { Text("选择省份 / 城市") },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = alertColor,
-                        focusedLabelColor = alertColor,
-                        cursorColor = alertColor
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                )
-                ExposedDropdownMenu(
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Button(
+                    onClick = { expanded = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = alertColor),
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp)
+                ) {
+                    Text(
+                        text = selectedProvince.ifBlank { "选择省份 / 城市" },
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                DropdownMenu(
                     expanded = expanded,
-                    onDismissRequest = { expanded = false }
+                    onDismissRequest = { expanded = false },
+                    modifier = Modifier.fillMaxWidth(0.92f)
                 ) {
                     WEATHER_PROVINCES.forEach { province ->
                         DropdownMenuItem(
