@@ -63,4 +63,5 @@ object RetrofitClient {
     val news60sApi: News60sApiService = retrofit.create(News60sApiService::class.java)
     val aiChatApi: AiChatApiService = pearRetrofit.create(AiChatApiService::class.java)
     val goldPriceApi: GoldPriceApiService = retrofit.create(GoldPriceApiService::class.java)
+    val weatherApi: WeatherApiService = retrofit.create(WeatherApiService::class.java)
 }

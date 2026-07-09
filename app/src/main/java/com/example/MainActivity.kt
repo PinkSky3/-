@@ -18,6 +18,7 @@ import com.example.ui.viewmodel.GoldPriceViewModel
 import com.example.ui.viewmodel.HotSearchViewModel
 import com.example.ui.viewmodel.News60sViewModel
 import com.example.ui.viewmodel.OilPriceViewModel
+import com.example.ui.viewmodel.WeatherAlertViewModel
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -30,12 +31,14 @@ class MainActivity : ComponentActivity() {
         val oilViewModel: OilPriceViewModel = viewModel()
         val goldViewModel: GoldPriceViewModel = viewModel()
         val news60sViewModel: News60sViewModel = viewModel()
+        val weatherAlertViewModel: WeatherAlertViewModel = viewModel()
         val aiChatViewModel: AiChatViewModel = viewModel()
         DailyHotDashboard(
           hotViewModel = hotViewModel,
           oilViewModel = oilViewModel,
           goldViewModel = goldViewModel,
           news60sViewModel = news60sViewModel,
+          weatherAlertViewModel = weatherAlertViewModel,
           aiChatViewModel = aiChatViewModel,
           isDarkTheme = isDarkTheme,
           onToggleTheme = { isDarkTheme = !isDarkTheme },

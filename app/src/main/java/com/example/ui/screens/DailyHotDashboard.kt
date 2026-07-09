@@ -124,6 +124,9 @@ import com.example.data.model.HotSearchItem
 import com.example.data.model.OilPriceEntry
 import com.example.data.model.PlatformCategory
 import com.example.data.model.PROVINCES
+import com.example.data.model.WeatherAlertItem
+import com.example.data.model.WeatherAlertResponse
+import com.example.data.model.WeatherForecastDay
 import com.example.ui.viewmodel.AiChatViewModel
 import com.example.ui.viewmodel.GoldPriceUiState
 import com.example.ui.viewmodel.GoldPriceViewModel
@@ -133,11 +136,13 @@ import com.example.ui.viewmodel.OilPriceViewModel
 import com.example.ui.viewmodel.News60sUiState
 import com.example.ui.viewmodel.News60sViewModel
 import com.example.ui.viewmodel.UiState
+import com.example.ui.viewmodel.WeatherAlertUiState
+import com.example.ui.viewmodel.WeatherAlertViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 enum class DashboardMode {
-    NEWS_60S, HOT_SEARCH, OIL_PRICE, GOLD_PRICE
+    NEWS_60S, HOT_SEARCH, WEATHER_ALERT, OIL_PRICE, GOLD_PRICE
 }
 
 @Composable
@@ -146,6 +151,7 @@ fun DailyHotDashboard(
     oilViewModel: OilPriceViewModel,
     goldViewModel: GoldPriceViewModel,
     news60sViewModel: News60sViewModel,
+    weatherAlertViewModel: WeatherAlertViewModel,
     aiChatViewModel: AiChatViewModel,
     isDarkTheme: Boolean = false,
     onToggleTheme: () -> Unit = {},
@@ -158,6 +164,7 @@ fun DailyHotDashboard(
     val goldState by goldViewModel.uiState.collectAsState()
     val selectedProvince by oilViewModel.selectedProvince.collectAsState()
     val news60sState by news60sViewModel.uiState.collectAsState()
+    val weatherAlertState by weatherAlertViewModel.uiState.collectAsState()
     var mode by remember { mutableStateOf(DashboardMode.NEWS_60S) }
     var selectedPlatformCategory by remember { mutableStateOf(PlatformCategory.ALL) }
 
@@ -240,6 +247,7 @@ fun DailyHotDashboard(
                         isRotating = true
                         when (mode) {
                             DashboardMode.HOT_SEARCH -> hotViewModel.refreshActivePlatform()
+                            DashboardMode.WEATHER_ALERT -> weatherAlertViewModel.refresh(force = true)
                             DashboardMode.OIL_PRICE -> oilViewModel.refresh()
                             DashboardMode.GOLD_PRICE -> goldViewModel.refresh()
                             DashboardMode.NEWS_60S -> news60sViewModel.refresh()
@@ -251,6 +259,12 @@ fun DailyHotDashboard(
                 when (mode) {
                     DashboardMode.NEWS_60S -> {
                         News60sContent(news60sState = news60sState, onRefresh = { news60sViewModel.refresh() })
+                    }
+                    DashboardMode.WEATHER_ALERT -> {
+                        WeatherAlertContent(
+                            state = weatherAlertState,
+                            onRefresh = { weatherAlertViewModel.refresh(force = true) }
+                        )
                     }
                     DashboardMode.HOT_SEARCH -> {
                         PlatformCategoryBar(
@@ -397,6 +411,7 @@ fun HeaderSection(
                             when (mode) {
                                 DashboardMode.NEWS_60S -> Color(0xFF2196F3).copy(alpha = 0.15f)
                                 DashboardMode.HOT_SEARCH -> activePlatform.brandColor.copy(alpha = 0.15f)
+                                DashboardMode.WEATHER_ALERT -> Color(0xFF00ACC1).copy(alpha = 0.15f)
                                 DashboardMode.OIL_PRICE -> Color(0xFFFF6B35).copy(alpha = 0.15f)
                                 DashboardMode.GOLD_PRICE -> Color(0xFFD4A017).copy(alpha = 0.16f)
                             }
@@ -407,6 +422,7 @@ fun HeaderSection(
                         text = when (mode) {
                             DashboardMode.NEWS_60S -> "\uD83D\uDCF0"
                             DashboardMode.HOT_SEARCH -> activePlatform.infoEmoji
+                            DashboardMode.WEATHER_ALERT -> "\u26A0\uFE0F"
                             DashboardMode.OIL_PRICE -> "\u26FD"
                             DashboardMode.GOLD_PRICE -> "\uD83E\uDE99"
                         },
@@ -417,6 +433,7 @@ fun HeaderSection(
                     text = when (mode) {
                         DashboardMode.NEWS_60S -> "60\u79D2\u8BFB\u4E16\u754C"
                         DashboardMode.HOT_SEARCH -> "\u591A\u5E73\u53F0\u70ED\u641C"
+                        DashboardMode.WEATHER_ALERT -> "\u6C14\u8C61\u9884\u8B66"
                         DashboardMode.OIL_PRICE -> "\u6CB9\u4EF7\u67E5\u8BE2"
                         DashboardMode.GOLD_PRICE -> "\u91D1\u4EF7\u67E5\u8BE2"
                     },
@@ -457,6 +474,7 @@ fun HeaderSection(
                         tint = when (mode) {
                             DashboardMode.NEWS_60S -> Color(0xFF2196F3)
                             DashboardMode.HOT_SEARCH -> activePlatform.brandColor
+                            DashboardMode.WEATHER_ALERT -> Color(0xFF00ACC1)
                             DashboardMode.OIL_PRICE -> Color(0xFFFF6B35)
                             DashboardMode.GOLD_PRICE -> Color(0xFFD4A017)
                         },
@@ -490,6 +508,7 @@ fun ModeToggle(
     val options = listOf(
         DashboardModeOption(DashboardMode.NEWS_60S, "60S", Color(0xFF2196F3)),
         DashboardModeOption(DashboardMode.HOT_SEARCH, "热搜", Color(0xFFFF6B35)),
+        DashboardModeOption(DashboardMode.WEATHER_ALERT, "预警", Color(0xFF00ACC1)),
         DashboardModeOption(DashboardMode.OIL_PRICE, "油价", Color(0xFFFF6B35)),
         DashboardModeOption(DashboardMode.GOLD_PRICE, "金价", Color(0xFFD4A017))
     )
@@ -559,6 +578,507 @@ private fun ModeToggleItem(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
+    }
+}
+
+@Composable
+fun WeatherAlertContent(
+    state: WeatherAlertUiState,
+    onRefresh: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val alertColor = Color(0xFF00ACC1)
+    when (state) {
+        is WeatherAlertUiState.Loading -> {
+            Box(
+                modifier = modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator(
+                        color = alertColor,
+                        strokeWidth = 3.dp,
+                        modifier = Modifier.size(46.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "正在按当前 IP 定位并查询气象预警...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                    )
+                }
+            }
+        }
+        is WeatherAlertUiState.Success -> {
+            WeatherAlertSuccessContent(
+                weather = state.weather,
+                fetchedTime = state.fetchedTime,
+                fromCache = state.fromCache,
+                alertColor = alertColor,
+                onRefresh = onRefresh,
+                modifier = modifier
+            )
+        }
+        is WeatherAlertUiState.Error -> {
+            val fallback = state.lastSuccess
+            if (fallback != null) {
+                WeatherAlertSuccessContent(
+                    weather = fallback,
+                    fetchedTime = "上次成功数据",
+                    fromCache = true,
+                    alertColor = alertColor,
+                    onRefresh = onRefresh,
+                    modifier = modifier
+                )
+            } else {
+                Box(
+                    modifier = modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(horizontal = 30.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = alertColor,
+                            modifier = Modifier.size(54.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = state.message,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(20.dp))
+                        WeatherRefreshButton(alertColor = alertColor, onRefresh = onRefresh)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WeatherAlertSuccessContent(
+    weather: WeatherAlertResponse,
+    fetchedTime: String,
+    fromCache: Boolean,
+    alertColor: Color,
+    onRefresh: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val alerts = weather.alerts.orEmpty().filter { !it.title.isNullOrBlank() || !it.text.isNullOrBlank() }
+    LazyColumn(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        contentPadding = PaddingValues(bottom = 88.dp)
+    ) {
+        item {
+            WeatherSummaryCard(
+                weather = weather,
+                fetchedTime = fetchedTime,
+                fromCache = fromCache,
+                alertCount = alerts.size,
+                alertColor = alertColor,
+                onRefresh = onRefresh
+            )
+        }
+
+        if (alerts.isEmpty()) {
+            item { NoWeatherAlertCard(alertColor = alertColor) }
+        } else {
+            itemsIndexed(alerts, key = { index, alert -> "${alert.title.orEmpty()}-$index" }) { _, alert ->
+                WeatherAlertCard(alert = alert, alertColor = alertColor)
+            }
+        }
+
+        val minutely = weather.minutelyForecast ?: weather.minutelyPrecip
+        if (!minutely?.summary.isNullOrBlank()) {
+            item {
+                WeatherInfoCard(
+                    title = "分钟级降水",
+                    body = minutely?.summary.orEmpty(),
+                    footnote = minutely?.updateTime,
+                    alertColor = alertColor
+                )
+            }
+        }
+
+        val riskyForecast = weather.forecast.orEmpty().filter { day ->
+            val text = listOfNotNull(day.weatherDay, day.weatherNight).joinToString(" ")
+            val precip = day.precip ?: 0.0
+            precip >= 10.0 || RISKY_WEATHER_KEYWORDS.any { text.contains(it) }
+        }.take(4)
+        if (riskyForecast.isNotEmpty()) {
+            item {
+                Text(
+                    text = "天气风险趋势",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(top = 4.dp, start = 2.dp)
+                )
+            }
+            itemsIndexed(riskyForecast, key = { index, day -> day.date ?: index.toString() }) { _, day ->
+                WeatherForecastRiskCard(day = day, alertColor = alertColor)
+            }
+        }
+    }
+}
+
+@Composable
+private fun WeatherSummaryCard(
+    weather: WeatherAlertResponse,
+    fetchedTime: String,
+    fromCache: Boolean,
+    alertCount: Int,
+    alertColor: Color,
+    onRefresh: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                    Icon(
+                        imageVector = Icons.Default.LocationOn,
+                        contentDescription = null,
+                        tint = alertColor,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = weather.locationLabel(),
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = "IP 自动定位 · ${if (fromCache) "缓存" else "刷新"} $fetchedTime",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+                IconButton(onClick = onRefresh) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "刷新预警",
+                        tint = alertColor
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(14.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                WeatherMetricChip("天气", weather.weather.orEmpty().ifBlank { "未知" }, alertColor, Modifier.weight(1f))
+                WeatherMetricChip("气温", weather.temperature.formatTemp(), alertColor, Modifier.weight(1f))
+                WeatherMetricChip("预警", if (alertCount > 0) "${alertCount} 条" else "暂无", alertColor, Modifier.weight(1f))
+            }
+            if (!weather.reportTime.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = "气象数据：${weather.reportTime}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WeatherMetricChip(
+    label: String,
+    value: String,
+    alertColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(alertColor.copy(alpha = 0.08f))
+            .padding(horizontal = 10.dp, vertical = 9.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+private fun NoWeatherAlertCard(alertColor: Color) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = alertColor.copy(alpha = 0.08f))
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Warning,
+                contentDescription = null,
+                tint = alertColor,
+                modifier = Modifier.size(28.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(
+                    text = "暂无有效气象预警",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "当前定位地区没有正在生效的官方气象预警。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WeatherAlertCard(alert: WeatherAlertItem, alertColor: Color) {
+    val levelColor = weatherLevelColor(alert.level, alertColor)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .clip(CircleShape)
+                        .background(levelColor)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = alert.title.orEmpty().ifBlank { "气象预警" },
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                WeatherPill(text = alert.type.orEmpty().ifBlank { "预警" }, color = levelColor)
+                WeatherPill(text = alert.level.orEmpty().ifBlank { "级别未知" }, color = levelColor)
+            }
+            val meta = listOfNotNull(alert.publisher, alert.publishTime).filter { it.isNotBlank() }.joinToString(" · ")
+            if (meta.isNotBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = meta,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
+            }
+            if (!alert.text.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                SelectionContainer {
+                    Text(
+                        text = alert.text,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                }
+            }
+            val guidance = alert.guidance.orEmpty().filter { it.isNotBlank() }
+            if (guidance.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "防御指引",
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                    color = levelColor
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                guidance.take(6).forEach { item ->
+                    Text(
+                        text = item,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.86f),
+                        lineHeight = 18.sp,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WeatherPill(text: String, color: Color) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+        color = color,
+        modifier = Modifier
+            .clip(RoundedCornerShape(99.dp))
+            .background(color.copy(alpha = 0.12f))
+            .padding(horizontal = 10.dp, vertical = 4.dp)
+    )
+}
+
+@Composable
+private fun WeatherInfoCard(
+    title: String,
+    body: String,
+    footnote: String?,
+    alertColor: Color
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                color = alertColor
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = body,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (!footnote.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = footnote,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WeatherForecastRiskCard(day: WeatherForecastDay, alertColor: Color) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = listOfNotNull(day.date, day.week).joinToString(" "),
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = listOfNotNull(day.weatherDay, day.weatherNight).joinToString(" / "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.76f)
+                )
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = "${day.tempMin.formatTemp()} / ${day.tempMax.formatTemp()}",
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    color = alertColor
+                )
+                Text(
+                    text = "降水 ${day.precip?.let { "${it.trimNumber()}mm" } ?: "--"}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.68f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WeatherRefreshButton(alertColor: Color, onRefresh: () -> Unit) {
+    Surface(
+        modifier = Modifier
+            .height(44.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .clickable { onRefresh() },
+        color = alertColor,
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Refresh,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = "重新加载",
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                color = Color.White
+            )
+        }
+    }
+}
+
+private val RISKY_WEATHER_KEYWORDS = listOf("暴雨", "大雨", "雷阵雨", "雷雨", "台风", "大风", "暴雪", "冰雹")
+
+private fun WeatherAlertResponse.locationLabel(): String {
+    return listOfNotNull(province, city, district)
+        .filter { it.isNotBlank() }
+        .distinct()
+        .joinToString(" · ")
+        .ifBlank { "当前位置" }
+}
+
+private fun Double?.formatTemp(): String {
+    return this?.let { "${it.trimNumber()}°C" } ?: "--"
+}
+
+private fun Double.trimNumber(): String {
+    return if (this % 1.0 == 0.0) toInt().toString() else String.format(Locale.US, "%.1f", this)
+}
+
+private fun weatherLevelColor(level: String?, fallback: Color): Color {
+    return when {
+        level?.contains("红") == true -> Color(0xFFE53935)
+        level?.contains("橙") == true -> Color(0xFFFF8F00)
+        level?.contains("黄") == true -> Color(0xFFFBC02D)
+        level?.contains("蓝") == true -> Color(0xFF1E88E5)
+        else -> fallback
     }
 }
 

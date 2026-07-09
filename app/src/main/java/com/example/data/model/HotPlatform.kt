@@ -318,14 +318,6 @@ enum class HotPlatform(
         infoEmoji = "📣",
         category = PlatformCategory.TECH
     ),
-    WEATHERALARM(
-        key = "weatheralarm",
-        displayName = "气象预警",
-        subtitle = "国家气象局实时灾害、台风及极端天气预警",
-        brandColor = Color(0xFF00ACC1),
-        infoEmoji = "🌪️",
-        category = PlatformCategory.OTHER
-    ),
     WEREAD(
         key = "weread",
         displayName = "微信读书",
