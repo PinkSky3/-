@@ -136,6 +136,7 @@ import com.example.ui.viewmodel.OilPriceViewModel
 import com.example.ui.viewmodel.News60sUiState
 import com.example.ui.viewmodel.News60sViewModel
 import com.example.ui.viewmodel.UiState
+import com.example.ui.viewmodel.WeatherAlertSnapshot
 import com.example.ui.viewmodel.WeatherAlertUiState
 import com.example.ui.viewmodel.WeatherAlertViewModel
 import kotlinx.coroutines.delay
@@ -611,7 +612,7 @@ fun WeatherAlertContent(
         }
         is WeatherAlertUiState.Success -> {
             WeatherAlertSuccessContent(
-                weather = state.weather,
+                snapshot = state.snapshot,
                 fetchedTime = state.fetchedTime,
                 fromCache = state.fromCache,
                 alertColor = alertColor,
@@ -623,7 +624,7 @@ fun WeatherAlertContent(
             val fallback = state.lastSuccess
             if (fallback != null) {
                 WeatherAlertSuccessContent(
-                    weather = fallback,
+                    snapshot = fallback,
                     fetchedTime = "上次成功数据",
                     fromCache = true,
                     alertColor = alertColor,
@@ -662,14 +663,16 @@ fun WeatherAlertContent(
 
 @Composable
 private fun WeatherAlertSuccessContent(
-    weather: WeatherAlertResponse,
+    snapshot: WeatherAlertSnapshot,
     fetchedTime: String,
     fromCache: Boolean,
     alertColor: Color,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val alerts = weather.alerts.orEmpty().filter { !it.title.isNullOrBlank() || !it.text.isNullOrBlank() }
+    val weather = snapshot.primary
+    val regionalWeather = snapshot.regional
+    val alerts = snapshot.allDisplayAlerts()
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -683,6 +686,7 @@ private fun WeatherAlertSuccessContent(
                 fetchedTime = fetchedTime,
                 fromCache = fromCache,
                 alertCount = alerts.size,
+                regionalCount = regionalWeather.size,
                 alertColor = alertColor,
                 onRefresh = onRefresh
             )
@@ -691,8 +695,19 @@ private fun WeatherAlertSuccessContent(
         if (alerts.isEmpty()) {
             item { NoWeatherAlertCard(alertColor = alertColor) }
         } else {
-            itemsIndexed(alerts, key = { index, alert -> "${alert.title.orEmpty()}-$index" }) { _, alert ->
+            itemsIndexed(alerts, key = { index, alert -> "${alert.title.orEmpty()}-${alert.location}-$index" }) { _, alert ->
                 WeatherAlertCard(alert = alert, alertColor = alertColor)
+            }
+        }
+
+        if (regionalWeather.isNotEmpty()) {
+            item {
+                WeatherInfoCard(
+                    title = "区域补充探测",
+                    body = "已按 ${weather.province.orEmpty().ifBlank { "当前省份" }} 补充查询 ${regionalWeather.joinToString("、") { it.city.orEmpty().ifBlank { it.district.orEmpty() } }}，避免 IP 定位点过窄漏掉沿海或省内重点预警。",
+                    footnote = null,
+                    alertColor = alertColor
+                )
             }
         }
 
@@ -735,6 +750,7 @@ private fun WeatherSummaryCard(
     fetchedTime: String,
     fromCache: Boolean,
     alertCount: Int,
+    regionalCount: Int,
     alertColor: Color,
     onRefresh: () -> Unit
 ) {
@@ -766,7 +782,7 @@ private fun WeatherSummaryCard(
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = "IP 自动定位 · ${if (fromCache) "缓存" else "刷新"} $fetchedTime",
+                            text = "IP 自动定位${if (regionalCount > 0) " · 区域补充 $regionalCount 城" else ""} · ${if (fromCache) "缓存" else "刷新"} $fetchedTime",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                         )
@@ -865,7 +881,7 @@ private fun NoWeatherAlertCard(alertColor: Color) {
 }
 
 @Composable
-private fun WeatherAlertCard(alert: WeatherAlertItem, alertColor: Color) {
+private fun WeatherAlertCard(alert: DisplayWeatherAlert, alertColor: Color) {
     val levelColor = weatherLevelColor(alert.level, alertColor)
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -882,7 +898,7 @@ private fun WeatherAlertCard(alert: WeatherAlertItem, alertColor: Color) {
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = alert.title.orEmpty().ifBlank { "气象预警" },
+                    text = alert.title.ifBlank { "气象预警" },
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
@@ -890,10 +906,11 @@ private fun WeatherAlertCard(alert: WeatherAlertItem, alertColor: Color) {
             }
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                WeatherPill(text = alert.type.orEmpty().ifBlank { "预警" }, color = levelColor)
-                WeatherPill(text = alert.level.orEmpty().ifBlank { "级别未知" }, color = levelColor)
+                WeatherPill(text = alert.location.ifBlank { "当前位置" }, color = levelColor)
+                WeatherPill(text = alert.type.ifBlank { "预警" }, color = levelColor)
+                WeatherPill(text = alert.level.ifBlank { "级别未知" }, color = levelColor)
             }
-            val meta = listOfNotNull(alert.publisher, alert.publishTime).filter { it.isNotBlank() }.joinToString(" · ")
+            val meta = listOf(alert.publisher, alert.publishTime).filter { it.isNotBlank() }.joinToString(" · ")
             if (meta.isNotBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -902,7 +919,7 @@ private fun WeatherAlertCard(alert: WeatherAlertItem, alertColor: Color) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
             }
-            if (!alert.text.isNullOrBlank()) {
+            if (alert.text.isNotBlank()) {
                 Spacer(modifier = Modifier.height(10.dp))
                 SelectionContainer {
                     Text(
@@ -913,7 +930,7 @@ private fun WeatherAlertCard(alert: WeatherAlertItem, alertColor: Color) {
                     )
                 }
             }
-            val guidance = alert.guidance.orEmpty().filter { it.isNotBlank() }
+            val guidance = alert.guidance.filter { it.isNotBlank() }
             if (guidance.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
@@ -1055,6 +1072,40 @@ private fun WeatherRefreshButton(alertColor: Color, onRefresh: () -> Unit) {
 }
 
 private val RISKY_WEATHER_KEYWORDS = listOf("暴雨", "大雨", "雷阵雨", "雷雨", "台风", "大风", "暴雪", "冰雹")
+
+private data class DisplayWeatherAlert(
+    val location: String,
+    val title: String,
+    val type: String,
+    val level: String,
+    val text: String,
+    val publishTime: String,
+    val publisher: String,
+    val guidance: List<String>
+)
+
+private fun WeatherAlertSnapshot.allDisplayAlerts(): List<DisplayWeatherAlert> {
+    return (listOf(primary) + regional)
+        .flatMap { weather ->
+            weather.alerts.orEmpty()
+                .filter { !it.title.isNullOrBlank() || !it.text.isNullOrBlank() }
+                .map { alert -> alert.toDisplayAlert(weather.locationLabel()) }
+        }
+        .distinctBy { listOf(it.location, it.title, it.publishTime, it.text).joinToString("|") }
+}
+
+private fun WeatherAlertItem.toDisplayAlert(location: String): DisplayWeatherAlert {
+    return DisplayWeatherAlert(
+        location = location,
+        title = title.orEmpty(),
+        type = type.orEmpty(),
+        level = level.orEmpty(),
+        text = text.orEmpty(),
+        publishTime = publishTime.orEmpty(),
+        publisher = publisher.orEmpty(),
+        guidance = guidance.orEmpty()
+    )
+}
 
 private fun WeatherAlertResponse.locationLabel(): String {
     return listOfNotNull(province, city, district)
