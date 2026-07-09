@@ -77,11 +77,14 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.menuAnchor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -264,7 +267,8 @@ fun DailyHotDashboard(
                     DashboardMode.WEATHER_ALERT -> {
                         WeatherAlertContent(
                             state = weatherAlertState,
-                            onRefresh = { weatherAlertViewModel.refresh(force = true) }
+                            onRefresh = { weatherAlertViewModel.refresh(force = true) },
+                            onQuery = { weatherAlertViewModel.queryCity(it) }
                         )
                     }
                     DashboardMode.HOT_SEARCH -> {
@@ -586,9 +590,11 @@ private fun ModeToggleItem(
 fun WeatherAlertContent(
     state: WeatherAlertUiState,
     onRefresh: () -> Unit,
+    onQuery: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val alertColor = Color(0xFF00ACC1)
+    var selectedProvince by remember { mutableStateOf("") }
     when (state) {
         is WeatherAlertUiState.Loading -> {
             Box(
@@ -617,6 +623,11 @@ fun WeatherAlertContent(
                 fromCache = state.fromCache,
                 alertColor = alertColor,
                 onRefresh = onRefresh,
+                selectedProvince = selectedProvince,
+                onQuery = { province ->
+                    selectedProvince = province
+                    onQuery(province)
+                },
                 modifier = modifier
             )
         }
@@ -629,6 +640,11 @@ fun WeatherAlertContent(
                     fromCache = true,
                     alertColor = alertColor,
                     onRefresh = onRefresh,
+                    selectedProvince = selectedProvince,
+                    onQuery = { province ->
+                        selectedProvince = province
+                        onQuery(province)
+                    },
                     modifier = modifier
                 )
             } else {
@@ -668,6 +684,8 @@ private fun WeatherAlertSuccessContent(
     fromCache: Boolean,
     alertColor: Color,
     onRefresh: () -> Unit,
+    selectedProvince: String,
+    onQuery: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val weather = snapshot.primary
@@ -692,6 +710,14 @@ private fun WeatherAlertSuccessContent(
             )
         }
 
+        item {
+            WeatherQueryCard(
+                selectedProvince = selectedProvince,
+                onQuery = onQuery,
+                alertColor = alertColor
+            )
+        }
+
         if (alerts.isEmpty()) {
             item { NoWeatherAlertCard(alertColor = alertColor) }
         } else {
@@ -703,8 +729,8 @@ private fun WeatherAlertSuccessContent(
         if (regionalWeather.isNotEmpty()) {
             item {
                 WeatherInfoCard(
-                    title = "区域补充探测",
-                    body = "已按 ${weather.province.orEmpty().ifBlank { "当前省份" }} 补充查询 ${regionalWeather.joinToString("、") { it.city.orEmpty().ifBlank { it.district.orEmpty() } }}，避免 IP 定位点过窄漏掉沿海或省内重点预警。",
+                    title = "自定义查询结果",
+                    body = "已补充查询 ${regionalWeather.joinToString("、") { it.locationLabel() }}。可在上方下拉框选择省份或城市补查，避免 IP 定位点过窄漏掉省内预警。",
                     footnote = null,
                     alertColor = alertColor
                 )
@@ -782,7 +808,7 @@ private fun WeatherSummaryCard(
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = "IP 自动定位${if (regionalCount > 0) " · 区域补充 $regionalCount 城" else ""} · ${if (fromCache) "缓存" else "刷新"} $fetchedTime",
+                            text = "IP 自动定位${if (regionalCount > 0) " · 自定义查询 $regionalCount 条" else ""} · ${if (fromCache) "缓存" else "刷新"} $fetchedTime",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                         )
@@ -816,6 +842,77 @@ private fun WeatherSummaryCard(
         }
     }
 }
+
+@Composable
+private fun WeatherQueryCard(
+    selectedProvince: String,
+    onQuery: (String) -> Unit,
+    alertColor: Color
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Text(
+                text = "按省份或城市补查",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = it },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    value = selectedProvince,
+                    onValueChange = {},
+                    readOnly = true,
+                    singleLine = true,
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    placeholder = { Text("选择省份 / 城市") },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = alertColor,
+                        focusedLabelColor = alertColor,
+                        cursorColor = alertColor
+                    ),
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth()
+                )
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    WEATHER_PROVINCES.forEach { province ->
+                        DropdownMenuItem(
+                            text = { Text(province) },
+                            onClick = {
+                                expanded = false
+                                onQuery(province)
+                            }
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "默认只按 IP 查一次；需要看省级预警时从下拉框选择，避免免费接口被批量限流。",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
+            )
+        }
+    }
+}
+
+private val WEATHER_PROVINCES = listOf(
+    "北京", "天津", "上海", "重庆",
+    "河北", "山西", "辽宁", "吉林", "黑龙江", "江苏", "浙江", "安徽", "福建", "江西", "山东", "河南", "湖北", "湖南", "广东", "海南", "四川", "贵州", "云南", "陕西", "甘肃", "青海", "台湾",
+    "内蒙古", "广西", "西藏", "宁夏", "新疆", "香港", "澳门"
+)
 
 @Composable
 private fun WeatherMetricChip(
