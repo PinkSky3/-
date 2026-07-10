@@ -44,7 +44,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
@@ -111,17 +110,13 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import com.example.data.model.GoldBankRecycleEntry
 import com.example.data.model.GoldBrandEntry
 import com.example.data.model.GoldMarketEntry
@@ -324,14 +319,14 @@ fun DailyHotDashboard(
                                         onItemClicked = { item ->
                                             if (item.url != null) {
                                                 previewUrl = item.url
-                                                previewTitle = item.title ?: "\u70ED\u641C\u8BE6\u60C5"
+                                                previewTitle = item.title
                                             }
                                         },
                                         onCopyItem = { item ->
-                                            copyToClipboard(context, (item.title ?: "\u6682\u65E0\u6807\u9898") + " " + (item.url ?: ""))
+                                            copyToClipboard(context, item.title + " " + (item.url ?: ""))
                                         },
                                         onShareItem = { item ->
-                                            shareText(context, "\u3010\u805A\u5408\u70ED\u641C\u00B7${activePlatform.displayName}\u3011${item.title ?: "\u6682\u65E0\u6807\u9898"}\uFF1A${item.url ?: ""}")
+                                            shareText(context, "\u3010\u805A\u5408\u70ED\u641C\u00B7${activePlatform.displayName}\u3011${item.title}\uFF1A${item.url ?: ""}")
                                         }
                                     )
                                 }
@@ -2240,7 +2235,7 @@ fun SuccessStateView(
             ) {
                 itemsIndexed(
                     items = items,
-                    key = { _, item -> (item.title ?: "") + (item.url ?: "") }
+                    key = { _, item -> item.title + (item.url ?: "") }
                 ) { index, item ->
                     TrendItemCard(
                         rank = index + 1,
@@ -2331,7 +2326,7 @@ fun TrendItemCard(
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
-                        text = item.title ?: "\u6682\u65E0\u6807\u9898",
+                        text = item.title,
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             lineHeight = 22.sp
@@ -2340,25 +2335,6 @@ fun TrendItemCard(
                         maxLines = if (isExpanded) 5 else 2,
                         overflow = TextOverflow.Ellipsis
                     )
-
-                    val coverMedia = resolveCoverUrl(platform, item.cover ?: item.pic)
-                    if (!coverMedia.isNullOrBlank()) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        AsyncImage(
-                            model = ImageRequest.Builder(LocalContext.current)
-                                .data(coverMedia)
-                                .crossfade(true)
-                                .build(),
-                            contentDescription = "\u70ED\u70B9\u5C01\u9762\u56FE",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(130.dp)
-                                .clip(RoundedCornerShape(12.dp)),
-                            contentScale = ContentScale.Crop,
-                            error = painterResource(id = android.R.drawable.stat_notify_error),
-                            fallback = painterResource(id = android.R.drawable.stat_notify_error)
-                        )
-                    }
 
                     val displayDesc = item.desc?.trim()
                     if (!displayDesc.isNullOrBlank() && displayDesc != "-" && displayDesc != "\u8BE5\u89C6\u9891\u6682\u65E0\u7B80\u4ECB") {
@@ -2378,25 +2354,11 @@ fun TrendItemCard(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            val authorLabel = item.author?.trim()
-                            if (!authorLabel.isNullOrBlank()) {
-                                Text(
-                                    text = "@$authorLabel",
-                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-                                    color = platform.brandColor.copy(alpha = 0.8f),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.widthIn(max = 140.dp)
-                                )
-                            } else {
-                                Text(
-                                    text = platform.displayName,
-                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-                                    color = platform.brandColor.copy(alpha = 0.7f)
-                                )
-                            }
-                        }
+                        Text(
+                            text = platform.displayName,
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = platform.brandColor.copy(alpha = 0.7f)
+                        )
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             if (!item.hot.isNullOrBlank()) {
@@ -2682,17 +2644,6 @@ fun InAppBrowserPreview(
                     .weight(1f)
             )
         }
-    }
-}
-
-fun resolveCoverUrl(platform: HotPlatform, rawUrl: String?): String? {
-    if (rawUrl.isNullOrBlank()) return null
-    if (rawUrl.startsWith("http://") || rawUrl.startsWith("https://")) return rawUrl
-    if (rawUrl.startsWith("//")) return "https:$rawUrl"
-
-    return when (platform) {
-        HotPlatform.SSPAI -> "https://cdn.sspai.com/$rawUrl"
-        else -> rawUrl
     }
 }
 

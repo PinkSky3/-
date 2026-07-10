@@ -51,7 +51,6 @@
 - **UI 框架**：[Jetpack Compose](https://developer.android.com/jetpack/compose) + [Material 3](https://m3.material.io/)
 - **架构**：ViewModel + StateFlow
 - **网络**：Retrofit + OkHttp + Moshi
-- **图片加载**：[Coil](https://coil-kt.github.io/coil/)
 - **持续集成**：GitHub Actions
 
 ## 版本

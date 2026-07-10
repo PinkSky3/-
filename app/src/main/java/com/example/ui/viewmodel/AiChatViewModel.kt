@@ -221,7 +221,7 @@ class AiChatViewModel : ViewModel() {
         if (ctx.hotItems.isNotEmpty()) {
             sb.appendLine("\u3010\u70ED\u641C\u6570\u636E\u3011")
             ctx.hotItems.take(15).forEachIndexed { i, item ->
-                sb.appendLine("${i + 1}. ${item.title ?: "\u65E0\u6807\u9898"} - ${item.hot ?: "\u70ED\u5EA6\u672A\u77E5"}")
+                sb.appendLine("${i + 1}. ${item.title} - ${item.hot ?: "\u70ED\u5EA6\u672A\u77E5"}")
             }
             sb.appendLine()
         }

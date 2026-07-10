@@ -21,10 +21,9 @@ sealed interface UiState {
     object Loading : UiState
     data class Success(
         val items: List<HotSearchItem>,
-        val filteredCount: Int,
         val updateTime: String?
     ) : UiState
-    data class Error(val message: String, val lastSuccessItems: List<HotSearchItem>? = null) : UiState
+    data class Error(val message: String) : UiState
 }
 
 class HotSearchViewModel : ViewModel() {
@@ -35,8 +34,8 @@ class HotSearchViewModel : ViewModel() {
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    private val _rawItems = MutableStateFlow<List<HotSearchItem>>(emptyList())
-    private val _fetchedTime = MutableStateFlow<String?>(null)
+    private var rawItems: List<HotSearchItem> = emptyList()
+    private var fetchedTime: String? = null
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Loading)
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
@@ -48,7 +47,7 @@ class HotSearchViewModel : ViewModel() {
     }
 
     fun selectPlatform(platform: HotPlatform) {
-        if (_activePlatform.value == platform && _uiState.value !is UiState.Error && _rawItems.value.isNotEmpty()) {
+        if (_activePlatform.value == platform && _uiState.value !is UiState.Error && rawItems.isNotEmpty()) {
             return
         }
         _activePlatform.value = platform
@@ -68,13 +67,12 @@ class HotSearchViewModel : ViewModel() {
     private fun fetchHotSearch(platform: HotPlatform) {
         fetchJob?.cancel()
         _uiState.value = UiState.Loading
-        _rawItems.value = emptyList()
+        rawItems = emptyList()
 
         val endpoints = getFallbackEndpoints(platform)
 
         fetchJob = viewModelScope.launch {
-            var lastErrorMsg = ""
-            var success = false
+            val errors = mutableListOf<String>()
 
             for (endpoint in endpoints) {
                 try {
@@ -83,27 +81,25 @@ class HotSearchViewModel : ViewModel() {
                         val bodyString = response.body()!!.string()
                         val items = extractListFromJson(bodyString)
                         if (items.isNotEmpty()) {
-                            _rawItems.value = items
+                            rawItems = items
                             val formattedTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-                            _fetchedTime.value = "$formattedTime | 源: ${getHostName(endpoint)}"
+                            fetchedTime = "$formattedTime | 源: ${getHostName(endpoint)}"
                             applyFilter()
-                            success = true
-                            break
+                            return@launch
                         } else {
-                            lastErrorMsg += "\n节点(${getHostName(endpoint)})解析空"
+                            errors += "节点(${getHostName(endpoint)})解析空"
                         }
                     } else {
-                        lastErrorMsg += "\n节点(${getHostName(endpoint)})错误: ${response.code()}"
+                        errors += "节点(${getHostName(endpoint)})错误: ${response.code()}"
                     }
                 } catch (e: Exception) {
-                    lastErrorMsg += "\n节点(${getHostName(endpoint)})异常: ${e.localizedMessage ?: e.message ?: "未知"}"
+                    errors += "节点(${getHostName(endpoint)})异常: ${e.localizedMessage ?: e.message ?: "未知"}"
                 }
             }
 
-            if (!success) {
-                val finalError = lastErrorMsg.trim().ifBlank { "数据获取失败，所有节点均不可用。" }
-                _uiState.value = UiState.Error(finalError, lastSuccessItems = null)
-            }
+            _uiState.value = UiState.Error(
+                errors.joinToString("\n").ifBlank { "数据获取失败，所有节点均不可用。" }
+            )
         }
     }
 
@@ -220,21 +216,19 @@ class HotSearchViewModel : ViewModel() {
 
     private fun applyFilter() {
         val query = _searchQuery.value.trim()
-        val currentRaw = _rawItems.value
+        val currentRaw = rawItems
         val filtered = if (query.isEmpty()) {
             currentRaw
         } else {
             currentRaw.filter { item ->
-                (item.title?.contains(query, ignoreCase = true) ?: false) ||
-                    (item.desc?.contains(query, ignoreCase = true) ?: false) ||
-                    (item.author?.contains(query, ignoreCase = true) ?: false)
+                item.title.contains(query, ignoreCase = true) ||
+                    (item.desc?.contains(query, ignoreCase = true) ?: false)
             }
         }
 
         _uiState.value = UiState.Success(
             items = filtered,
-            filteredCount = filtered.size,
-            updateTime = _fetchedTime.value
+            updateTime = fetchedTime
         )
     }
 }
