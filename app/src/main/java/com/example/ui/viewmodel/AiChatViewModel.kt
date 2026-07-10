@@ -58,6 +58,7 @@ class AiChatViewModel : ViewModel() {
 
     private val _dialogVisible = MutableStateFlow(false)
     val dialogVisible: StateFlow<Boolean> = _dialogVisible.asStateFlow()
+    private var healthCheckRunning = false
 
     init {
         refreshModels()
@@ -82,7 +83,7 @@ class AiChatViewModel : ViewModel() {
                     _selectedModel.value = list.first().id
                 }
 
-                if (list.isNotEmpty()) testModels(list.map { it.id })
+                testCurrentModels()
             } catch (_: Exception) {
                 _modelHealthList.value = fallbackModels
                 if (_selectedModel.value.isBlank()) _selectedModel.value = fallbackModels.first().id
@@ -90,19 +91,27 @@ class AiChatViewModel : ViewModel() {
         }
     }
 
-    private suspend fun testModels(modelIds: List<String>) {
-        for (id in modelIds) {
-            try {
-                val request = ChatCompletionRequest(
-                    model = id,
-                    messages = listOf(ChatMessage("user", "hi")),
-                    temperature = 0.1
-                )
-                val response = RetrofitClient.aiChatApi.chatCompletions(request)
-                updateModelHealth(id, response.isSuccessful)
-            } catch (_: Exception) {
-                updateModelHealth(id, false)
+    private suspend fun testCurrentModels() {
+        if (healthCheckRunning) return
+        val ids = _modelHealthList.value.map { it.id }
+        if (ids.isEmpty()) return
+        healthCheckRunning = true
+        try {
+            for (id in ids) {
+                try {
+                    val request = ChatCompletionRequest(
+                        model = id,
+                        messages = listOf(ChatMessage("user", "hi")),
+                        temperature = 0.1
+                    )
+                    val response = RetrofitClient.aiChatApi.chatCompletions(request)
+                    updateModelHealth(id, response.isSuccessful)
+                } catch (_: Exception) {
+                    updateModelHealth(id, false)
+                }
             }
+        } finally {
+            healthCheckRunning = false
         }
     }
 
@@ -125,8 +134,8 @@ class AiChatViewModel : ViewModel() {
         viewModelScope.launch {
             while (true) {
                 delay(60_000)
-                val ids = _modelHealthList.value.map { it.id }
-                if (ids.isNotEmpty()) testModels(ids)
+                if (!_dialogVisible.value) continue
+                testCurrentModels()
             }
         }
     }
@@ -137,6 +146,7 @@ class AiChatViewModel : ViewModel() {
 
     fun showDialog() {
         _dialogVisible.value = true
+        viewModelScope.launch { testCurrentModels() }
     }
 
     fun hideDialog() {

@@ -44,9 +44,10 @@ class WeatherAlertViewModel : ViewModel() {
 
     fun refresh(force: Boolean = false) {
         val now = System.currentTimeMillis()
-        if (!force && lastSuccess != null && now - lastSuccessAtMillis < CACHE_TTL_MILLIS) {
+        val cached = lastSuccess
+        if (!force && cached != null && now - lastSuccessAtMillis < CACHE_TTL_MILLIS) {
             _uiState.value = WeatherAlertUiState.Success(
-                snapshot = lastSuccess!!,
+                snapshot = cached,
                 fetchedTime = lastFetchedLabel,
                 fromCache = true
             )
@@ -62,12 +63,7 @@ class WeatherAlertViewModel : ViewModel() {
                 if (response.isSuccessful) {
                     val body = response.body()
                     if (body != null) {
-                        val snapshot = WeatherAlertSnapshot(body)
-                        val fetchedLabel = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-                        lastSuccess = snapshot
-                        lastSuccessAtMillis = System.currentTimeMillis()
-                        lastFetchedLabel = fetchedLabel
-                        _uiState.value = WeatherAlertUiState.Success(snapshot, fetchedLabel)
+                        publishSuccess(WeatherAlertSnapshot(body))
                     } else {
                         _uiState.value = WeatherAlertUiState.Error("天气预警接口返回为空", lastSuccess)
                     }
@@ -108,11 +104,7 @@ class WeatherAlertViewModel : ViewModel() {
                         } else {
                             WeatherAlertSnapshot(body)
                         }
-                        val fetchedLabel = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-                        lastSuccess = snapshot
-                        lastSuccessAtMillis = System.currentTimeMillis()
-                        lastFetchedLabel = fetchedLabel
-                        _uiState.value = WeatherAlertUiState.Success(snapshot, fetchedLabel)
+                        publishSuccess(snapshot)
                     } else {
                         _uiState.value = WeatherAlertUiState.Error("城市 $normalizedCity 天气预警返回为空", lastSuccess)
                     }
@@ -131,6 +123,14 @@ class WeatherAlertViewModel : ViewModel() {
                 )
             }
         }
+    }
+
+    private fun publishSuccess(snapshot: WeatherAlertSnapshot) {
+        val fetchedLabel = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+        lastSuccess = snapshot
+        lastSuccessAtMillis = System.currentTimeMillis()
+        lastFetchedLabel = fetchedLabel
+        _uiState.value = WeatherAlertUiState.Success(snapshot, fetchedLabel)
     }
 
     private fun String.encodeUrl(): String = URLEncoder.encode(this, "UTF-8")
