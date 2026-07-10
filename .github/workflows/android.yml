@@ -43,22 +43,56 @@ jobs:
     - name: Create local.properties
       run: echo "sdk.dir=$ANDROID_HOME" > local.properties
 
-    - name: Create debug keystore
-      run: |
-        keytool -genkey -v -keystore ./debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
-
-    - name: Test and build APKs
+    - name: Restore signing keystore
       shell: pwsh
-      run: ./gradlew testDebugUnitTest assembleDebug assembleRelease --stacktrace --no-daemon
+      run: |
+        $ErrorActionPreference = 'Stop'
+        $encodedKeystore = (Get-Content -LiteralPath 'debug.keystore.base64' -Raw -Encoding UTF8).Trim()
+        [IO.File]::WriteAllBytes(
+          (Join-Path $PWD 'debug.keystore'),
+          [Convert]::FromBase64String($encodedKeystore)
+        )
 
-    - name: Upload Debug APK
+    - name: Test and build signed Release APK
+      shell: pwsh
+      env:
+        KEYSTORE_PATH: ${{ github.workspace }}/debug.keystore
+        STORE_PASSWORD: android
+        KEY_ALIAS: androiddebugkey
+        KEY_PASSWORD: android
+      run: |
+        $ErrorActionPreference = 'Stop'
+        ./gradlew testDebugUnitTest assembleRelease --stacktrace --no-daemon
+
+    - name: Verify and name signed APK
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Stop'
+        $sourceApk = Resolve-Path -LiteralPath 'app/build/outputs/apk/release/app-release.apk'
+        $buildScript = Get-Content -LiteralPath 'app/build.gradle.kts' -Raw -Encoding UTF8
+        $versionMatch = [regex]::Match($buildScript, 'versionName\s*=\s*"([^"]+)"')
+        if (-not $versionMatch.Success) {
+          throw 'Unable to read versionName from app/build.gradle.kts'
+        }
+        $fileName = "聚合智讯_ver$($versionMatch.Groups[1].Value).apk"
+        $targetApk = Join-Path (Split-Path -Parent $sourceApk.Path) $fileName
+        $apksigner = Get-ChildItem -LiteralPath "$env:ANDROID_HOME/build-tools" -Recurse -File -Filter 'apksigner' |
+          Sort-Object FullName -Descending |
+          Select-Object -First 1
+        if ($null -eq $apksigner) {
+          throw 'Android apksigner was not found'
+        }
+        & $apksigner.FullName verify --verbose --print-certs $sourceApk.Path
+        if ($LASTEXITCODE -ne 0) {
+          throw 'Release APK signature verification failed'
+        }
+        Move-Item -LiteralPath $sourceApk.Path -Destination $targetApk
+        "APK_FILE_NAME=$fileName" | Out-File -LiteralPath $env:GITHUB_ENV -Encoding UTF8 -Append
+        "APK_FILE_PATH=$targetApk" | Out-File -LiteralPath $env:GITHUB_ENV -Encoding UTF8 -Append
+
+    - name: Upload signed Release APK
       uses: actions/upload-artifact@v4
       with:
-        name: app-debug.apk
-        path: app/build/outputs/apk/debug/app-debug.apk
-
-    - name: Upload Release APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-release.apk
-        path: app/build/outputs/apk/release/*.apk
+        name: ${{ env.APK_FILE_NAME }}
+        path: ${{ env.APK_FILE_PATH }}
+        if-no-files-found: error
