@@ -1,5 +1,5 @@
 {
   "name": "综合资讯 · DailyHot-Android",
-  "description": "实时聚合国内外多平台热搜榜单（微博/知乎/百度/B站/NGA/小红书等40+平台），展示60秒快新闻、实时油价金价，并集成AI问答",
+  "description": "实时聚合国内外多平台热搜榜单（微博/知乎/百度/B站/NGA/小红书等40+平台），展示60秒快新闻、气象预警和实时油价金价",
   "requestFramePermissions": []
 }
