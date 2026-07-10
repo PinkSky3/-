@@ -52,6 +52,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -60,8 +62,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CarCrash
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Launch
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Refresh
@@ -97,6 +101,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -111,6 +116,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -142,8 +148,23 @@ import com.example.ui.viewmodel.WeatherAlertViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-enum class DashboardMode {
-    NEWS_60S, HOT_SEARCH, WEATHER_ALERT, OIL_PRICE, GOLD_PRICE
+enum class DashboardMode(
+    val shortLabel: String,
+    val title: String,
+    val emoji: String,
+    val color: Color
+) {
+    NEWS_60S("60S", "60秒读世界", "📰", Color(0xFF2196F3)),
+    HOT_SEARCH("热搜", "多平台热搜", "", Color(0xFFFF6B35)),
+    WEATHER_ALERT("预警", "气象预警", "⚠️", Color(0xFF00ACC1)),
+    OIL_PRICE("油价", "油价查询", "⛽", Color(0xFFFF6B35)),
+    GOLD_PRICE("金价", "金价查询", "🪙", Color(0xFFD4A017));
+
+    fun accentColor(activePlatform: HotPlatform): Color =
+        if (this == HOT_SEARCH) activePlatform.brandColor else color
+
+    fun badge(activePlatform: HotPlatform): String =
+        if (this == HOT_SEARCH) activePlatform.infoEmoji else emoji
 }
 
 @Composable
@@ -166,15 +187,15 @@ fun DailyHotDashboard(
     val selectedProvince by oilViewModel.selectedProvince.collectAsState()
     val news60sState by news60sViewModel.uiState.collectAsState()
     val weatherAlertState by weatherAlertViewModel.uiState.collectAsState()
-    var mode by remember { mutableStateOf(DashboardMode.NEWS_60S) }
-    var selectedPlatformCategory by remember { mutableStateOf(PlatformCategory.ALL) }
+    var mode by rememberSaveable { mutableStateOf(DashboardMode.NEWS_60S) }
+    var selectedPlatformCategory by rememberSaveable { mutableStateOf(PlatformCategory.ALL) }
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     // Web view preview state
-    var previewUrl by remember { mutableStateOf<String?>(null) }
-    var previewTitle by remember { mutableStateOf<String?>(null) }
+    var previewUrl by rememberSaveable { mutableStateOf<String?>(null) }
+    var previewTitle by rememberSaveable { mutableStateOf<String?>(null) }
 
     // Floating action rotation animation state
     var isRotating by remember { mutableStateOf(false) }
@@ -396,7 +417,10 @@ fun HeaderSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
                     text = "\u805A\u5408\u667A\u8BAF",
                     style = MaterialTheme.typography.headlineMedium.copy(
@@ -409,77 +433,55 @@ fun HeaderSection(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(6.dp))
-                        .background(
-                            when (mode) {
-                                DashboardMode.NEWS_60S -> Color(0xFF2196F3).copy(alpha = 0.15f)
-                                DashboardMode.HOT_SEARCH -> activePlatform.brandColor.copy(alpha = 0.15f)
-                                DashboardMode.WEATHER_ALERT -> Color(0xFF00ACC1).copy(alpha = 0.15f)
-                                DashboardMode.OIL_PRICE -> Color(0xFFFF6B35).copy(alpha = 0.15f)
-                                DashboardMode.GOLD_PRICE -> Color(0xFFD4A017).copy(alpha = 0.16f)
-                            }
-                        )
+                        .background(mode.accentColor(activePlatform).copy(alpha = 0.15f))
                         .padding(horizontal = 6.dp, vertical = 2.dp)
                 ) {
                     Text(
-                        text = when (mode) {
-                            DashboardMode.NEWS_60S -> "\uD83D\uDCF0"
-                            DashboardMode.HOT_SEARCH -> activePlatform.infoEmoji
-                            DashboardMode.WEATHER_ALERT -> "\u26A0\uFE0F"
-                            DashboardMode.OIL_PRICE -> "\u26FD"
-                            DashboardMode.GOLD_PRICE -> "\uD83E\uDE99"
-                        },
+                        text = mode.badge(activePlatform),
                         fontSize = 12.sp
                     )
                 }
                 Text(
-                    text = when (mode) {
-                        DashboardMode.NEWS_60S -> "60\u79D2\u8BFB\u4E16\u754C"
-                        DashboardMode.HOT_SEARCH -> "\u591A\u5E73\u53F0\u70ED\u641C"
-                        DashboardMode.WEATHER_ALERT -> "\u6C14\u8C61\u9884\u8B66"
-                        DashboardMode.OIL_PRICE -> "\u6CB9\u4EF7\u67E5\u8BE2"
-                        DashboardMode.GOLD_PRICE -> "\u91D1\u4EF7\u67E5\u8BE2"
-                    },
+                    text = mode.title,
                     modifier = Modifier.padding(start = 8.dp),
                     style = MaterialTheme.typography.bodySmall.copy(
                         letterSpacing = 0.5.sp
                     ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
+                IconButton(
+                    onClick = onToggleTheme,
                     modifier = Modifier
+                        .size(48.dp)
                         .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surface)
-                        .clickable { onToggleTheme() }
-                        .padding(10.dp)
                 ) {
-                    Text(
-                        text = if (isDarkTheme) "\u2600\uFE0F" else "\uD83C\uDF19",
-                        fontSize = 16.sp
+                    Icon(
+                        imageVector = if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
+                        contentDescription = if (isDarkTheme) "切换浅色主题" else "切换深色主题",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
                 Spacer(modifier = Modifier.width(4.dp))
-                Box(
+                IconButton(
+                    onClick = onRefresh,
                     modifier = Modifier
+                        .size(48.dp)
                         .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surface)
-                        .clickable { onRefresh() }
-                        .padding(10.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = "\u5237\u65B0",
-                        tint = when (mode) {
-                            DashboardMode.NEWS_60S -> Color(0xFF2196F3)
-                            DashboardMode.HOT_SEARCH -> activePlatform.brandColor
-                            DashboardMode.WEATHER_ALERT -> Color(0xFF00ACC1)
-                            DashboardMode.OIL_PRICE -> Color(0xFFFF6B35)
-                            DashboardMode.GOLD_PRICE -> Color(0xFFD4A017)
-                        },
+                        tint = mode.accentColor(activePlatform),
                         modifier = Modifier
                             .size(20.dp)
                             .rotate(rotationAngle)
@@ -507,18 +509,10 @@ fun ModeToggle(
     onModeChange: (DashboardMode) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val options = listOf(
-        DashboardModeOption(DashboardMode.NEWS_60S, "60S", Color(0xFF2196F3)),
-        DashboardModeOption(DashboardMode.HOT_SEARCH, "热搜", Color(0xFFFF6B35)),
-        DashboardModeOption(DashboardMode.WEATHER_ALERT, "预警", Color(0xFF00ACC1)),
-        DashboardModeOption(DashboardMode.OIL_PRICE, "油价", Color(0xFFFF6B35)),
-        DashboardModeOption(DashboardMode.GOLD_PRICE, "金价", Color(0xFFD4A017))
-    )
-
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .height(40.dp)
+            .height(48.dp)
             .clip(RoundedCornerShape(10.dp)),
         shape = RoundedCornerShape(10.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
@@ -526,15 +520,16 @@ fun ModeToggle(
         Row(
             modifier = Modifier
                 .fillMaxSize()
+                .selectableGroup()
                 .padding(horizontal = 3.dp, vertical = 3.dp),
             horizontalArrangement = Arrangement.spacedBy(3.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            options.forEach { option ->
+            DashboardMode.entries.forEach { option ->
                 ModeToggleItem(
                     option = option,
-                    selected = mode == option.mode,
-                    onSelected = { onModeChange(option.mode) },
+                    selected = mode == option,
+                    onSelected = { onModeChange(option) },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -542,15 +537,9 @@ fun ModeToggle(
     }
 }
 
-private data class DashboardModeOption(
-    val mode: DashboardMode,
-    val label: String,
-    val color: Color
-)
-
 @Composable
 private fun ModeToggleItem(
-    option: DashboardModeOption,
+    option: DashboardMode,
     selected: Boolean,
     onSelected: () -> Unit,
     modifier: Modifier = Modifier
@@ -569,12 +558,16 @@ private fun ModeToggleItem(
             .fillMaxHeight()
             .clip(RoundedCornerShape(8.dp))
             .background(bg)
-            .clickable { onSelected() }
+            .selectable(
+                selected = selected,
+                onClick = onSelected,
+                role = Role.Tab
+            )
             .padding(horizontal = 11.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = option.label,
+            text = option.shortLabel,
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
             color = content,
             maxLines = 1,
@@ -591,7 +584,7 @@ fun WeatherAlertContent(
     modifier: Modifier = Modifier
 ) {
     val alertColor = Color(0xFF00ACC1)
-    var selectedProvince by remember { mutableStateOf("") }
+    var selectedProvince by rememberSaveable { mutableStateOf("") }
     when (state) {
         is WeatherAlertUiState.Loading -> {
             Box(
@@ -1265,7 +1258,8 @@ fun OilPriceContent(
                 val oilColor = Color(0xFFFF6B35)
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    contentPadding = PaddingValues(bottom = 96.dp)
                 ) {
                     item {
                         Card(
@@ -1766,7 +1760,7 @@ fun News60sContent(
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(scrollState)
-                        .padding(horizontal = 4.dp),
+                        .padding(start = 4.dp, end = 4.dp, bottom = 96.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Row(
@@ -2236,7 +2230,12 @@ fun SuccessStateView(
 
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    top = 8.dp,
+                    end = 16.dp,
+                    bottom = 96.dp
+                ),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 itemsIndexed(
