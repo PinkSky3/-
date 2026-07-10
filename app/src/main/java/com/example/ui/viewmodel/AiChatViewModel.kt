@@ -122,9 +122,9 @@ class AiChatViewModel : ViewModel() {
         current[idx] = current[idx].copy(isOnline = isOnline)
         _modelHealthList.value = current
 
-        val sel = _selectedModel.value
-        val currentOnline = current.any { it.id == sel && it.isOnline }
-        if (sel.isBlank() || (!currentOnline && current.none { it.id == sel })) {
+        val selectedModelId = _selectedModel.value
+        val selectedModelOnline = current.any { it.id == selectedModelId && it.isOnline }
+        if (selectedModelId.isBlank() || !selectedModelOnline) {
             val firstOnline = current.firstOrNull { it.isOnline }
             if (firstOnline != null) _selectedModel.value = firstOnline.id
         }
