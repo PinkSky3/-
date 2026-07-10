@@ -4,8 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.api.RetrofitClient
 import com.example.data.model.News60sRootResponse
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,10 +31,6 @@ class News60sViewModel : ViewModel() {
     private val _uiState = MutableStateFlow<News60sUiState>(News60sUiState.Loading)
     val uiState: StateFlow<News60sUiState> = _uiState.asStateFlow()
 
-    private val moshi: Moshi = Moshi.Builder()
-        .addLast(KotlinJsonAdapterFactory())
-        .build()
-
     init {
         fetchNews()
     }
@@ -52,7 +46,7 @@ class News60sViewModel : ViewModel() {
             try {
                 for (base in apiBases) {
                     try {
-                        val response = RetrofitClient.news60sApi.fetch("$base/v2/60s")
+                        val response = RetrofitClient.rawApi.fetch("$base/v2/60s")
                         if (response.isSuccessful) {
                             val body = response.body()?.string()
                             if (body != null) {
@@ -91,7 +85,7 @@ class News60sViewModel : ViewModel() {
 
     private fun parseResponse(body: String): ParsedNews60s? {
         return try {
-            val adapter = moshi.adapter(News60sRootResponse::class.java)
+            val adapter = RetrofitClient.moshi.adapter(News60sRootResponse::class.java)
             val root = adapter.fromJson(body)
             if (root?.code != 200) return null
             val data = root.data ?: return null

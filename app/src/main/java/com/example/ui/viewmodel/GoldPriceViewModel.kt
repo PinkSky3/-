@@ -70,7 +70,7 @@ class GoldPriceViewModel : ViewModel() {
         )
         for ((url, parser) in providers) {
             try {
-                val body = RetrofitClient.goldPriceApi.fetch(url).body()?.string() ?: continue
+                val body = RetrofitClient.rawApi.fetch(url).body()?.string() ?: continue
                 parser(body)?.let { return it }
             } catch (_: Exception) {
             }
@@ -80,7 +80,7 @@ class GoldPriceViewModel : ViewModel() {
 
     private suspend fun fetchSupplementaryGoldData(): SupplementaryGoldData {
         return try {
-            val body = RetrofitClient.goldPriceApi.fetch("https://v2.xxapi.cn/api/goldprice").body()?.string()
+            val body = RetrofitClient.rawApi.fetch("https://v2.xxapi.cn/api/goldprice").body()?.string()
                 ?: return SupplementaryGoldData()
             parseXxapi(body)
         } catch (_: Exception) {

@@ -1,5 +1,8 @@
 package com.example.data.model
 
+import com.squareup.moshi.JsonClass
+
+@JsonClass(generateAdapter = true)
 data class News60sRootResponse(
     val code: Int? = null,
     val message: String? = null,
@@ -8,6 +11,7 @@ data class News60sRootResponse(
     val api_source: String? = null
 )
 
+@JsonClass(generateAdapter = true)
 data class News60sDataResponse(
     val date: String? = null,
     val news: List<String>? = null,

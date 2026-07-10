@@ -6,8 +6,6 @@ import com.example.data.api.RetrofitClient
 import com.example.data.model.OilPriceRootResponse
 import com.example.data.model.OilPriceEntry
 import com.example.data.model.PROVINCES
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -46,10 +44,6 @@ class OilPriceViewModel : ViewModel() {
 
     private var fetchJob: Job? = null
 
-    private val moshi: Moshi = Moshi.Builder()
-        .addLast(KotlinJsonAdapterFactory())
-        .build()
-
     init {
         fetchOilPrice()
     }
@@ -75,7 +69,7 @@ class OilPriceViewModel : ViewModel() {
                 val encodedProvince = URLEncoder.encode(province, StandardCharsets.UTF_8.name())
                 for (endpoint in apiEndpoints) {
                     try {
-                        val response = RetrofitClient.oilPriceApi.fetch(endpoint.url(encodedProvince))
+                        val response = RetrofitClient.rawApi.fetch(endpoint.url(encodedProvince))
                         if (response.isSuccessful) {
                             val body = response.body()?.string()
                             if (body != null) {
@@ -124,7 +118,7 @@ class OilPriceViewModel : ViewModel() {
 
     private fun parseResponse(body: String): ParsedOilPrice? {
         return try {
-            val adapter = moshi.adapter(OilPriceRootResponse::class.java)
+            val adapter = RetrofitClient.moshi.adapter(OilPriceRootResponse::class.java)
             val root = adapter.fromJson(body)
             if (root?.code != 200) return null
             val data = root.data ?: return null

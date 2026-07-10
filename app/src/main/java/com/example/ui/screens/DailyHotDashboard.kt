@@ -2400,7 +2400,7 @@ fun TrendItemCard(
                         }
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (item.hot != null && item.hot.value.isNotBlank()) {
+                            if (!item.hot.isNullOrBlank()) {
                                 Icon(
                                     imageVector = Icons.Default.Whatshot,
                                     contentDescription = "\u70ED\u5EA6",
@@ -2409,7 +2409,7 @@ fun TrendItemCard(
                                 )
                                 Spacer(modifier = Modifier.width(3.dp))
                                 Text(
-                                    text = formatHotNumber(item.hot.value),
+                                    text = formatHotNumber(item.hot),
                                     style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

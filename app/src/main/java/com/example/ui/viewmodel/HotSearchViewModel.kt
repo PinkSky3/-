@@ -3,7 +3,6 @@ package com.example.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.api.RetrofitClient
-import com.example.data.model.CoercedString
 import com.example.data.model.HotPlatform
 import com.example.data.model.HotSearchItem
 import kotlinx.coroutines.Job
@@ -79,7 +78,7 @@ class HotSearchViewModel : ViewModel() {
 
             for (endpoint in endpoints) {
                 try {
-                    val response = RetrofitClient.apiService.getHotListWithUrl(endpoint)
+                    val response = RetrofitClient.rawApi.fetch(endpoint)
                     if (response.isSuccessful && response.body() != null) {
                         val bodyString = response.body()!!.string()
                         val items = extractListFromJson(bodyString)
@@ -194,8 +193,7 @@ class HotSearchViewModel : ViewModel() {
                 val url = extractStringExt(element, listOf("url", "link", "mobileUrl", "href", "short_url"))
                 val desc = extractStringExt(element, listOf("desc", "description", "summary", "detail", "note"))
                 val hotStr = extractStringExt(element, listOf("hot", "score", "index", "hotValue", "num", "hot_score", "search_volume"))
-                val hotObj = if (hotStr != null) CoercedString(hotStr) else null
-                list.add(HotSearchItem(title = title, url = url, desc = desc, hot = hotObj))
+                list.add(HotSearchItem(title = title, url = url, desc = desc, hot = hotStr))
             } else if (element is String) {
                 list.add(HotSearchItem(title = element, url = null))
             }
