@@ -26,7 +26,7 @@ object RetrofitClient {
         chain.proceed(request)
     }
 
-    private val pearApiClient: OkHttpClient = OkHttpClient.Builder()
+    private val pearApiClient: OkHttpClient = okHttpClient.newBuilder()
         .addInterceptor(authInterceptor)
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
