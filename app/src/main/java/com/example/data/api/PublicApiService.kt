@@ -25,6 +25,9 @@ internal sealed interface FallbackFetchResult<out T> {
     data class Failure(val errors: List<EndpointFailure>) : FallbackFetchResult<Nothing>
 }
 
+internal fun FallbackFetchResult.Failure.lastErrorSuffix(): String =
+    errors.lastOrNull()?.let { "\uFF1A${it.url} ${it.reason}" }.orEmpty()
+
 internal suspend fun <T> PublicApiService.fetchFirstParsed(
     urls: Iterable<String>,
     parse: (String, String) -> T?

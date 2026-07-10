@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.api.FallbackFetchResult
 import com.example.data.api.RetrofitClient
 import com.example.data.api.fetchFirstParsed
+import com.example.data.api.lastErrorSuffix
 import com.example.data.model.News60sRootResponse
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +24,7 @@ sealed interface News60sUiState {
 
 class News60sViewModel : ViewModel() {
 
+    private val responseAdapter = RetrofitClient.moshi.adapter(News60sRootResponse::class.java)
     private val apiBases = listOf(
         "https://60s.viki.moe",
         "https://60s.crystelf.top",
@@ -58,10 +60,8 @@ class News60sViewModel : ViewModel() {
                     )
                 }
                 is FallbackFetchResult.Failure -> {
-                    val lastError = result.errors.lastOrNull()
-                    val detail = lastError?.let { "\uFF1A${it.url} ${it.reason}" }.orEmpty()
                     _uiState.value = News60sUiState.Error(
-                        "60S\u65B0\u95FB\u83B7\u53D6\u5931\u8D25\uFF0C\u5DF2\u5C1D\u8BD5\u591A\u4E2A\u516C\u5171\u5B9E\u4F8B$detail"
+                        "60S\u65B0\u95FB\u83B7\u53D6\u5931\u8D25\uFF0C\u5DF2\u5C1D\u8BD5\u591A\u4E2A\u516C\u5171\u5B9E\u4F8B${result.lastErrorSuffix()}"
                     )
                 }
             }
@@ -75,8 +75,7 @@ class News60sViewModel : ViewModel() {
 
     private fun parseResponse(body: String): ParsedNews60s? {
         return try {
-            val adapter = RetrofitClient.moshi.adapter(News60sRootResponse::class.java)
-            val root = adapter.fromJson(body)
+            val root = responseAdapter.fromJson(body)
             if (root?.code != 200) return null
             val data = root.data ?: return null
             val news = data.news

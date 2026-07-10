@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.api.FallbackFetchResult
 import com.example.data.api.RetrofitClient
 import com.example.data.api.fetchFirstParsed
+import com.example.data.api.lastErrorSuffix
 import com.example.data.model.OilPriceRootResponse
 import com.example.data.model.OilPriceEntry
 import kotlinx.coroutines.Job
@@ -28,6 +29,7 @@ sealed interface OilPriceUiState {
 
 class OilPriceViewModel : ViewModel() {
 
+    private val responseAdapter = RetrofitClient.moshi.adapter(OilPriceRootResponse::class.java)
     private val apiEndpoints = listOf(
         "https://60s.viki.moe/v2/fuel-price",
         "https://api.nxvav.cn/api/fuel-price/",
@@ -80,10 +82,8 @@ class OilPriceViewModel : ViewModel() {
                     )
                 }
                 is FallbackFetchResult.Failure -> {
-                    val lastError = result.errors.lastOrNull()
-                    val detail = lastError?.let { "\uFF1A${it.url} ${it.reason}" }.orEmpty()
                     _uiState.value = OilPriceUiState.Error(
-                        "\u6CB9\u4EF7\u6570\u636E\u83B7\u53D6\u5931\u8D25\uFF0C\u5DF2\u5C1D\u8BD5\u591A\u4E2A\u516C\u5171\u5B9E\u4F8B$detail"
+                        "\u6CB9\u4EF7\u6570\u636E\u83B7\u53D6\u5931\u8D25\uFF0C\u5DF2\u5C1D\u8BD5\u591A\u4E2A\u516C\u5171\u5B9E\u4F8B${result.lastErrorSuffix()}"
                     )
                 }
             }
@@ -99,8 +99,7 @@ class OilPriceViewModel : ViewModel() {
 
     private fun parseResponse(body: String): ParsedOilPrice? {
         return try {
-            val adapter = RetrofitClient.moshi.adapter(OilPriceRootResponse::class.java)
-            val root = adapter.fromJson(body)
+            val root = responseAdapter.fromJson(body)
             if (root?.code != 200) return null
             val data = root.data ?: return null
             val entries = data.items
