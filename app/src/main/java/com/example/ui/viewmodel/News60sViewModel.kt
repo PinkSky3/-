@@ -44,7 +44,7 @@ class News60sViewModel : ViewModel() {
     private fun fetchNews() {
         _uiState.value = News60sUiState.Loading
         viewModelScope.launch {
-            when (val result = RetrofitClient.rawApi.fetchFirstParsed(
+            when (val result = RetrofitClient.publicApi.fetchFirstParsed(
                 urls = apiBases.map { "$it/v2/60s" },
                 parse = { _, body -> parseResponse(body) }
             )) {

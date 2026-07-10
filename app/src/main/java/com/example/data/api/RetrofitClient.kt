@@ -22,6 +22,5 @@ object RetrofitClient {
         .addConverterFactory(MoshiConverterFactory.create(moshi))
         .build()
 
-    val rawApi: RawApiService = retrofit.create(RawApiService::class.java)
-    val weatherApi: WeatherApiService = retrofit.create(WeatherApiService::class.java)
+    val publicApi: PublicApiService = retrofit.create(PublicApiService::class.java)
 }

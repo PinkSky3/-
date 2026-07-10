@@ -74,7 +74,7 @@ class HotSearchViewModel : ViewModel() {
         val endpoints = getFallbackEndpoints(platform)
 
         fetchJob = viewModelScope.launch {
-            when (val result = RetrofitClient.rawApi.fetchFirstParsed(
+            when (val result = RetrofitClient.publicApi.fetchFirstParsed(
                 urls = endpoints,
                 parse = { _, body -> extractListFromJson(body).takeIf { it.isNotEmpty() } }
             )) {

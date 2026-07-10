@@ -1,13 +1,17 @@
 package com.example.data.api
 
+import com.example.data.model.WeatherAlertResponse
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Url
 
-interface RawApiService {
+interface PublicApiService {
     @GET
-    suspend fun fetch(@Url url: String): Response<ResponseBody>
+    suspend fun fetchRaw(@Url url: String): Response<ResponseBody>
+
+    @GET
+    suspend fun fetchWeather(@Url url: String): Response<WeatherAlertResponse>
 }
 
 internal data class EndpointFailure(
@@ -20,14 +24,14 @@ internal sealed interface FallbackFetchResult<out T> {
     data class Failure(val errors: List<EndpointFailure>) : FallbackFetchResult<Nothing>
 }
 
-internal suspend fun <T> RawApiService.fetchFirstParsed(
+internal suspend fun <T> PublicApiService.fetchFirstParsed(
     urls: Iterable<String>,
     parse: (String, String) -> T?
 ): FallbackFetchResult<T> {
     val errors = mutableListOf<EndpointFailure>()
     for (url in urls) {
         try {
-            val response = fetch(url)
+            val response = fetchRaw(url)
             if (!response.isSuccessful) {
                 errors += EndpointFailure(url, "HTTP ${response.code()}")
                 continue

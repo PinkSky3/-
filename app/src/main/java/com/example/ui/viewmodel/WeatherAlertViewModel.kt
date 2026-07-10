@@ -59,7 +59,7 @@ class WeatherAlertViewModel : ViewModel() {
 
         fetchJob = viewModelScope.launch {
             try {
-                val response = RetrofitClient.weatherApi.fetch(WEATHER_URL)
+                val response = RetrofitClient.publicApi.fetchWeather(WEATHER_URL)
                 if (response.isSuccessful) {
                     val body = response.body()
                     if (body != null) {
@@ -94,7 +94,7 @@ class WeatherAlertViewModel : ViewModel() {
 
         fetchJob = viewModelScope.launch {
             try {
-                val response = RetrofitClient.weatherApi.fetch(WEATHER_URL + "&city=" + normalizedCity.encodeUrl())
+                val response = RetrofitClient.publicApi.fetchWeather(WEATHER_URL + "&city=" + normalizedCity.encodeUrl())
                 if (response.isSuccessful) {
                     val body = response.body()
                     if (body != null) {

@@ -70,7 +70,7 @@ class GoldPriceViewModel : ViewModel() {
             "https://tmini.net/api/gold-price?type=json" to ::parseTmini,
             "https://api.freejk.com/shuju/jinjia/" to ::parseFreejk
         )
-        return when (val result = RetrofitClient.rawApi.fetchFirstParsed(
+        return when (val result = RetrofitClient.publicApi.fetchFirstParsed(
             urls = providers.keys,
             parse = { url, body -> providers.getValue(url)(body) }
         )) {
@@ -80,7 +80,7 @@ class GoldPriceViewModel : ViewModel() {
     }
 
     private suspend fun fetchSupplementaryGoldData(): SupplementaryGoldData {
-        return when (val result = RetrofitClient.rawApi.fetchFirstParsed(
+        return when (val result = RetrofitClient.publicApi.fetchFirstParsed(
             urls = listOf("https://v2.xxapi.cn/api/goldprice"),
             parse = { _, body -> parseXxapi(body) }
         )) {

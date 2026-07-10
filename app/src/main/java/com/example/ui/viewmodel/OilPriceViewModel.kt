@@ -67,7 +67,7 @@ class OilPriceViewModel : ViewModel() {
 
         fetchJob = viewModelScope.launch {
             val encodedProvince = URLEncoder.encode(province, StandardCharsets.UTF_8.name())
-            when (val result = RetrofitClient.rawApi.fetchFirstParsed(
+            when (val result = RetrofitClient.publicApi.fetchFirstParsed(
                 urls = apiEndpoints.map { it.url(encodedProvince) },
                 parse = { _, body -> parseResponse(body) }
             )) {
