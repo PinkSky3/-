@@ -47,14 +47,6 @@ jobs:
       run: |
         keytool -genkey -v -keystore ./debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
 
-    - name: Create CI env from GitHub Secrets
-      env:
-        PEAR_AI_API_KEY: ${{ secrets.PEAR_AI_API_KEY }}
-      run: |
-        {
-          echo "AI_API_KEY=${PEAR_AI_API_KEY:-CI_PLACEHOLDER}"
-        } > .env
-
     - name: Build APKs
       shell: pwsh
       run: ./gradlew assembleDebug assembleRelease --stacktrace --no-daemon

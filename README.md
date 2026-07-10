@@ -1,6 +1,6 @@
 # 综合资讯 · DailyHot-Android
 
-**综合资讯 (DailyHot-Android)** 是一款个人日常信息聚合 Android 客户端，聚合全网多平台热搜榜单、60 秒快新闻、实时油价/金价数据，并集成 AI 问答功能，一站式满足日常信息获取需求。
+**综合资讯 (DailyHot-Android)** 是一款个人日常信息聚合 Android 客户端，聚合全网多平台热搜榜单、60 秒快新闻、气象预警与实时油价/金价数据，一站式满足日常信息获取需求。
 
 ## 功能特性
 
@@ -9,7 +9,7 @@
 - 默认首页展示每日 **60 秒新闻** 图文速览
 - 支持一键刷新，随时获取最新资讯
 - 支持长图保存与分享
-- 可切换为 AI 问答或热搜榜单作为默认首页
+- 可切换热搜、气象预警、油价和金价页面
 
 ### 多平台热搜聚合
 
@@ -38,13 +38,6 @@
 - 展示 **银行积存金** 与 **黄金现货** 价格
 - 内置备用接口，主数据源失效时自动切换，保障可用性
 
-### AI 问答
-
-- 内置对话界面，支持流式对话
-- 支持 **多模型切换**，实时显示模型状态
-- 自动注入当前新闻、热搜、油价金价作为上下文，让 AI 回答更具时效性
-- 模型列表接口不可用时自动回退默认模型，保证基础可用
-
 ## 技术栈
 
 - **语言**：[Kotlin](https://kotlinlang.org/)
@@ -59,12 +52,6 @@
 
 ## 构建指南
 
-在项目根目录创建 `.env` 文件：
-
-```bash
-AI_API_KEY=sk-xxx
-```
-
 构建 Debug APK：
 
 ```bash
@@ -77,23 +64,10 @@ APK 输出路径：
 app/build/outputs/apk/debug/app-debug.apk
 ```
 
-## GitHub Actions 配置
-
-API key 不应写入源码。AI 问答使用的 key 可通过 GitHub Secrets 或本地 `.env` 注入；workflow 和仓库文件中不会出现 key 明文。
-
-如果需要私有构建或本地调试，在仓库 `Settings -> Secrets and variables -> Actions` 或本地 `.env` 中配置：
-
-| Name | Value |
-| --- | --- |
-| `PEAR_AI_API_KEY` | `sk-xxx` |
-
-注意：GitHub Secrets 可以保证仓库不出现明文 key，但如果把 key 注入 APK，逆向 APK 仍有提取风险。若需要保护 APK 内部密钥，请部署服务端代理，把真实 key 放在代理服务环境变量中。
-
 ## 数据来源
 
 - 热搜聚合：`dailyhotapi.3yu3.top`
 - 60 秒新闻 / 油价：`60s.viki.moe` 及公开备用实例，油价额外兜底 `api.nxvav.cn`
-- AI 问答：`api.pearapi.ai`
 - 金价：`tmini.net`、`api.freejk.com`、`v2.xxapi.cn`
 
 ---

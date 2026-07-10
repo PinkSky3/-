@@ -41,7 +41,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -67,13 +66,9 @@ import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.data.model.HotPlatform
 import com.example.data.model.PlatformCategory
-import com.example.ui.viewmodel.AiChatViewModel
-import com.example.ui.viewmodel.GoldPriceUiState
 import com.example.ui.viewmodel.GoldPriceViewModel
 import com.example.ui.viewmodel.HotSearchViewModel
-import com.example.ui.viewmodel.OilPriceUiState
 import com.example.ui.viewmodel.OilPriceViewModel
-import com.example.ui.viewmodel.News60sUiState
 import com.example.ui.viewmodel.News60sViewModel
 import com.example.ui.viewmodel.UiState
 import com.example.ui.viewmodel.WeatherAlertViewModel
@@ -104,7 +99,6 @@ fun DailyHotDashboard(
     goldViewModel: GoldPriceViewModel,
     news60sViewModel: News60sViewModel,
     weatherAlertViewModel: WeatherAlertViewModel,
-    aiChatViewModel: AiChatViewModel,
     isDarkTheme: Boolean = false,
     onToggleTheme: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -134,26 +128,6 @@ fun DailyHotDashboard(
         animationSpec = tween(durationMillis = 650),
         finishedListener = { isRotating = false }
     )
-
-    // Update AI chat context when data changes
-    LaunchedEffect(uiState, news60sState, oilState, goldState, selectedProvince) {
-        val hotItems = (uiState as? UiState.Success)?.items?.take(15) ?: emptyList()
-        val newsList = (news60sState as? News60sUiState.Success)?.newsList ?: emptyList()
-        val oilEntries = (oilState as? OilPriceUiState.Success)?.entries ?: emptyList()
-        val oilProvince = (oilState as? OilPriceUiState.Success)?.province
-        val goldMarkets = (goldState as? GoldPriceUiState.Success)?.snapshot?.let {
-            it.domesticMarkets + it.internationalMarkets
-        } ?: emptyList()
-        aiChatViewModel.updateContext(
-            com.example.ui.viewmodel.AiContext(
-                hotItems = hotItems,
-                news60s = newsList,
-                oilProvince = oilProvince,
-                oilEntries = oilEntries,
-                goldMarkets = goldMarkets
-            )
-        )
-    }
 
     // Back handler to close native WebView preview
     if (previewUrl != null) {
@@ -316,13 +290,6 @@ fun DailyHotDashboard(
                 }
             }
 
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 16.dp, bottom = 16.dp)
-            ) {
-                AiChatFab(viewModel = aiChatViewModel)
-            }
         }
     }
 }

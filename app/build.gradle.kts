@@ -25,23 +25,6 @@ android {
     versionName = "1.2.2"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-    fun readSecret(envName: String, dotEnvName: String): String {
-      val envValue = System.getenv(envName)
-      val value = if (!envValue.isNullOrBlank()) envValue else try {
-        rootProject.file(".env").readLines()
-          .firstOrNull { it.startsWith("$dotEnvName=") }
-          ?.substringAfter("=")
-          ?.trim()
-          ?: ""
-      } catch (_: Exception) { "" }
-      return if (value.equals("CI_PLACEHOLDER", ignoreCase = true)) "" else value
-    }
-
-    fun String.asBuildConfigString(): String =
-      "\"${replace("\\", "\\\\").replace("\"", "\\\"")}\""
-
-    buildConfigField("String", "PEAR_AI_API_KEY", readSecret("PEAR_AI_API_KEY", "AI_API_KEY").asBuildConfigString())
   }
 
   signingConfigs {
@@ -81,7 +64,6 @@ android {
   }
   buildFeatures {
     compose = true
-    buildConfig = true
   }
   testOptions { unitTests { isIncludeAndroidResources = true } }
 }
