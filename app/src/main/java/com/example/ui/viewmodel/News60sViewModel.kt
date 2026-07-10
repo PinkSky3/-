@@ -6,6 +6,7 @@ import com.example.data.api.FallbackFetchResult
 import com.example.data.api.RetrofitClient
 import com.example.data.api.fetchFirstParsed
 import com.example.data.model.News60sRootResponse
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,6 +33,7 @@ class News60sViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow<News60sUiState>(News60sUiState.Loading)
     val uiState: StateFlow<News60sUiState> = _uiState.asStateFlow()
+    private var fetchJob: Job? = null
 
     init {
         fetchNews()
@@ -42,8 +44,9 @@ class News60sViewModel : ViewModel() {
     }
 
     private fun fetchNews() {
+        fetchJob?.cancel()
         _uiState.value = News60sUiState.Loading
-        viewModelScope.launch {
+        fetchJob = viewModelScope.launch {
             when (val result = RetrofitClient.publicApi.fetchFirstParsed(
                 urls = apiBases.map { "$it/v2/60s" },
                 parse = { _, body -> parseResponse(body) }

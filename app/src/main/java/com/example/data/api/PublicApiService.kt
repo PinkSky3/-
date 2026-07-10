@@ -1,6 +1,7 @@
 package com.example.data.api
 
 import com.example.data.model.WeatherAlertResponse
+import kotlinx.coroutines.CancellationException
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.GET
@@ -40,6 +41,8 @@ internal suspend fun <T> PublicApiService.fetchFirstParsed(
             val value = body?.let { parse(url, it) }
             if (value != null) return FallbackFetchResult.Success(url, value)
             errors += EndpointFailure(url, if (body == null) "\u7A7A\u54CD\u5E94" else "\u89E3\u6790\u4E3A\u7A7A")
+        } catch (exception: CancellationException) {
+            throw exception
         } catch (exception: Exception) {
             errors += EndpointFailure(url, exception.localizedMessage ?: exception.message ?: "\u672A\u77E5\u9519\u8BEF")
         }

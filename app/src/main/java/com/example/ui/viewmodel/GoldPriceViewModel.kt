@@ -9,6 +9,7 @@ import com.example.data.model.GoldBankRecycleEntry
 import com.example.data.model.GoldBrandEntry
 import com.example.data.model.GoldMarketEntry
 import com.example.data.model.GoldPriceSnapshot
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -57,6 +58,8 @@ class GoldPriceViewModel : ViewModel() {
                         source = source
                     )
                 )
+            } catch (exception: CancellationException) {
+                throw exception
             } catch (e: Exception) {
                 _uiState.value = GoldPriceUiState.Error(
                     "\u91D1\u4EF7\u63A5\u53E3\u5F02\u5E38: ${e.localizedMessage ?: e.message ?: "\u672A\u77E5\u9519\u8BEF"}"

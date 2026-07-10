@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.api.RetrofitClient
 import com.example.data.model.WeatherAlertResponse
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -75,6 +76,8 @@ class WeatherAlertViewModel : ViewModel() {
                     }
                     _uiState.value = WeatherAlertUiState.Error(message, lastSuccess)
                 }
+            } catch (exception: CancellationException) {
+                throw exception
             } catch (e: Exception) {
                 _uiState.value = WeatherAlertUiState.Error(
                     e.localizedMessage ?: e.message ?: "天气预警获取失败",
@@ -116,6 +119,8 @@ class WeatherAlertViewModel : ViewModel() {
                     }
                     _uiState.value = WeatherAlertUiState.Error(message, lastSuccess)
                 }
+            } catch (exception: CancellationException) {
+                throw exception
             } catch (e: Exception) {
                 _uiState.value = WeatherAlertUiState.Error(
                     e.localizedMessage ?: e.message ?: "城市 $normalizedCity 查询失败",
