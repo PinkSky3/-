@@ -5,10 +5,7 @@ import com.squareup.moshi.JsonClass
 @JsonClass(generateAdapter = true)
 data class News60sRootResponse(
     val code: Int? = null,
-    val message: String? = null,
-    val msg: String? = null,
-    val data: News60sDataResponse? = null,
-    val api_source: String? = null
+    val data: News60sDataResponse? = null
 )
 
 @JsonClass(generateAdapter = true)

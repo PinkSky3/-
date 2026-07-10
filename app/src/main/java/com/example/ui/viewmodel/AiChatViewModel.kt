@@ -135,10 +135,6 @@ class AiChatViewModel : ViewModel() {
         _selectedModel.value = id
     }
 
-    fun toggleDialog() {
-        _dialogVisible.value = !_dialogVisible.value
-    }
-
     fun showDialog() {
         _dialogVisible.value = true
     }
@@ -202,11 +198,6 @@ class AiChatViewModel : ViewModel() {
                 _chatState.value = AiChatState.Error("\u7F51\u7EDC\u5F02\u5E38: ${e.localizedMessage ?: e.message ?: "\u672A\u77E5\u9519\u8BEF"}")
             }
         }
-    }
-
-    fun clearMessages() {
-        _messages.value = emptyList()
-        _chatState.value = AiChatState.Idle
     }
 
     private fun buildSystemPrompt(ctx: AiContext): String {

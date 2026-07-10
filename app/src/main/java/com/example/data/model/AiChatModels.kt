@@ -33,17 +33,12 @@ data class Choice(
 
 @JsonClass(generateAdapter = true)
 data class ModelsListResponse(
-    val `object`: String? = null,
     val data: List<ModelInfo>? = null
 )
 
 @JsonClass(generateAdapter = true)
 data class ModelInfo(
     val id: String? = null,
-    val `object`: String? = null,
-    val created: Long? = null,
-    val owned_by: String? = null,
     val model: String? = null,
-    val model_type: String? = null,
     val channel_type: String? = null
 )

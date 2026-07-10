@@ -5,8 +5,6 @@ import com.squareup.moshi.JsonClass
 @JsonClass(generateAdapter = true)
 data class OilPriceRootResponse(
     val code: Int? = null,
-    val message: String? = null,
-    val msg: String? = null,
     val data: OilPriceDataResponse? = null
 )
 
@@ -24,12 +22,6 @@ data class OilPriceDataResponse(
 @JsonClass(generateAdapter = true)
 data class OilPriceTrend(
     val next_adjustment_date: String? = null,
-    val direction: String? = null,
-    val change_ton: Double? = null,
-    val change_ton_desc: String? = null,
-    val change_liter_min: Double? = null,
-    val change_liter_max: Double? = null,
-    val change_liter_desc: String? = null,
     val description: String? = null
 )
 

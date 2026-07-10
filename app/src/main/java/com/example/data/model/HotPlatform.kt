@@ -336,20 +336,9 @@ enum class HotPlatform(
     );
 
     companion object {
-        fun fromKey(key: String): HotPlatform? {
-            return values().find { it.key.equals(key, ignoreCase = true) }
-        }
-
         fun platformsByCategory(category: PlatformCategory): List<HotPlatform> {
             return if (category == PlatformCategory.ALL) values().toList()
             else values().filter { it.category == category }
-        }
-
-        val categoryPlatformCounts: Map<PlatformCategory, Int> by lazy {
-            PlatformCategory.values().associateWith { cat ->
-                if (cat == PlatformCategory.ALL) values().size
-                else values().count { it.category == cat }
-            }
         }
     }
 }
