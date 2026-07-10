@@ -26,7 +26,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Send
-import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -53,10 +52,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.data.model.ModelHealth
 import com.example.ui.viewmodel.AiChatState
 import com.example.ui.viewmodel.AiChatViewModel
@@ -77,7 +78,7 @@ fun AiChatFab(
         contentAlignment = Alignment.Center
     ) {
         Icon(
-            imageVector = Icons.Default.SmartToy,
+            painter = painterResource(R.drawable.ic_smart_toy),
             contentDescription = "AI\u95EE\u7B54",
             tint = Color.White,
             modifier = Modifier.size(26.dp)
@@ -160,7 +161,7 @@ fun AiChatSheet(viewModel: AiChatViewModel) {
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
-                            imageVector = Icons.Default.SmartToy,
+                            painter = painterResource(R.drawable.ic_smart_toy),
                             contentDescription = null,
                             tint = Color(0xFF2196F3).copy(alpha = 0.3f),
                             modifier = Modifier.size(56.dp)

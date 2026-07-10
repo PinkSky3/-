@@ -58,20 +58,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.CarCrash
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.Launch
-import androidx.compose.material.icons.filled.LightMode
-import androidx.compose.material.icons.filled.LocalGasStation
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -111,12 +100,14 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.example.R
 import com.example.data.model.GoldBankRecycleEntry
 import com.example.data.model.GoldBrandEntry
 import com.example.data.model.GoldMarketEntry
@@ -458,7 +449,7 @@ fun HeaderSection(
                         .background(MaterialTheme.colorScheme.surface)
                 ) {
                     Icon(
-                        imageVector = if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
+                        painter = painterResource(if (isDarkTheme) R.drawable.ic_light_mode else R.drawable.ic_dark_mode),
                         contentDescription = if (isDarkTheme) "切换浅色主题" else "切换深色主题",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
@@ -642,7 +633,7 @@ fun WeatherAlertContent(
                         modifier = Modifier.padding(horizontal = 30.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Warning,
+                            painter = painterResource(R.drawable.ic_warning),
                             contentDescription = null,
                             tint = alertColor,
                             modifier = Modifier.size(54.dp)
@@ -778,7 +769,7 @@ private fun WeatherSummaryCard(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                     Icon(
-                        imageVector = Icons.Default.LocationOn,
+                        painter = painterResource(R.drawable.ic_location_on),
                         contentDescription = null,
                         tint = alertColor,
                         modifier = Modifier.size(24.dp)
@@ -935,7 +926,7 @@ private fun NoWeatherAlertCard(alertColor: Color) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Default.Warning,
+                painter = painterResource(R.drawable.ic_warning),
                 contentDescription = null,
                 tint = alertColor,
                 modifier = Modifier.size(28.dp)
@@ -1269,7 +1260,7 @@ fun OilPriceContent(
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.LocalGasStation,
+                                    painter = painterResource(R.drawable.ic_local_gas_station),
                                     contentDescription = null,
                                     tint = oilColor,
                                     modifier = Modifier.size(48.dp)
@@ -1318,7 +1309,7 @@ fun OilPriceContent(
                         modifier = Modifier.padding(horizontal = 30.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Warning,
+                            painter = painterResource(R.drawable.ic_warning),
                             contentDescription = null,
                             tint = Color(0xFFFF6B35),
                             modifier = Modifier.size(54.dp)
@@ -1447,7 +1438,7 @@ fun GoldPriceContent(
                     modifier = Modifier.padding(horizontal = 30.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Warning,
+                        painter = painterResource(R.drawable.ic_warning),
                         contentDescription = null,
                         tint = goldColor,
                         modifier = Modifier.size(54.dp)
@@ -1770,7 +1761,7 @@ fun News60sContent(
                             enabled = allNewsText.isNotBlank()
                         ) {
                             Icon(
-                                imageVector = Icons.Default.ContentCopy,
+                                painter = painterResource(R.drawable.ic_content_copy),
                                 contentDescription = "\u4E00\u952E\u590D\u523660\u79D2\u5168\u90E8\u65B0\u95FB",
                                 tint = Color(0xFF2196F3)
                             )
@@ -1792,7 +1783,7 @@ fun News60sContent(
                         modifier = Modifier.padding(horizontal = 30.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Warning,
+                            painter = painterResource(R.drawable.ic_warning),
                             contentDescription = null,
                             tint = Color(0xFF2196F3),
                             modifier = Modifier.size(54.dp)
@@ -1893,7 +1884,7 @@ fun ProvinceSelector(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = Icons.Default.LocationOn,
+                        painter = painterResource(R.drawable.ic_location_on),
                         contentDescription = null,
                         tint = Color(0xFFFF6B35),
                         modifier = Modifier.size(20.dp)
@@ -2363,7 +2354,7 @@ fun TrendItemCard(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             if (!item.hot.isNullOrBlank()) {
                                 Icon(
-                                    imageVector = Icons.Default.Whatshot,
+                                    painter = painterResource(R.drawable.ic_whatshot),
                                     contentDescription = "\u70ED\u5EA6",
                                     tint = platform.brandColor,
                                     modifier = Modifier.size(14.dp)
@@ -2381,7 +2372,7 @@ fun TrendItemCard(
                                 modifier = Modifier.size(32.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.ContentCopy,
+                                    painter = painterResource(R.drawable.ic_content_copy),
                                     contentDescription = "\u590D\u5236\u6587\u5B57",
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(16.dp)
@@ -2402,14 +2393,14 @@ fun TrendItemCard(
                 ) {
                     IconButton(onClick = onCopy) {
                         Icon(
-                            imageVector = Icons.Default.ContentCopy,
+                            painter = painterResource(R.drawable.ic_content_copy),
                             contentDescription = "\u590D\u5236\u94FE\u63A5",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     IconButton(onClick = onShare) {
                         Icon(
-                            imageVector = Icons.Default.Share,
+                            painter = painterResource(R.drawable.ic_share),
                             contentDescription = "\u5206\u4EAB\u70ED\u70B9",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -2464,7 +2455,7 @@ fun ErrorStateView(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
-            imageVector = Icons.Default.Warning,
+            painter = painterResource(R.drawable.ic_warning),
             contentDescription = "\u9519\u8BEF",
             tint = platform.brandColor,
             modifier = Modifier.size(54.dp)
@@ -2571,7 +2562,7 @@ fun InAppBrowserPreview(
                     copyToClipboard(context, url)
                 }) {
                     Icon(
-                        imageVector = Icons.Default.ContentCopy,
+                        painter = painterResource(R.drawable.ic_content_copy),
                         contentDescription = "\u590D\u5236\u94FE\u63A5",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -2581,7 +2572,7 @@ fun InAppBrowserPreview(
                     openInBrowser(context, url)
                 }) {
                     Icon(
-                        imageVector = Icons.Default.Language,
+                        painter = painterResource(R.drawable.ic_language),
                         contentDescription = "\u7CFB\u7EDF\u9ED8\u8BA4\u6D4F\u89C8\u5668\u6253\u5F00",
                         tint = brandColor
                     )
