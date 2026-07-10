@@ -7,7 +7,6 @@ import com.example.data.api.RetrofitClient
 import com.example.data.api.fetchFirstParsed
 import com.example.data.model.OilPriceRootResponse
 import com.example.data.model.OilPriceEntry
-import com.example.data.model.PROVINCES
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,15 +29,15 @@ sealed interface OilPriceUiState {
 class OilPriceViewModel : ViewModel() {
 
     private val apiEndpoints = listOf(
-        OilPriceEndpoint("https://60s.viki.moe/v2/fuel-price"),
-        OilPriceEndpoint("https://api.nxvav.cn/api/fuel-price/"),
-        OilPriceEndpoint("https://api.yanyua.icu/v2/fuel-price"),
-        OilPriceEndpoint("https://60s.7se.cn/v2/fuel-price"),
-        OilPriceEndpoint("https://60s.superjeason.qzz.io/v2/fuel-price"),
-        OilPriceEndpoint("https://60s.crystelf.top/v2/fuel-price")
+        "https://60s.viki.moe/v2/fuel-price",
+        "https://api.nxvav.cn/api/fuel-price/",
+        "https://api.yanyua.icu/v2/fuel-price",
+        "https://60s.7se.cn/v2/fuel-price",
+        "https://60s.superjeason.qzz.io/v2/fuel-price",
+        "https://60s.crystelf.top/v2/fuel-price"
     )
 
-    private val _selectedProvince = MutableStateFlow(PROVINCES[10])
+    private val _selectedProvince = MutableStateFlow("浙江")
     val selectedProvince: StateFlow<String> = _selectedProvince.asStateFlow()
 
     private val _uiState = MutableStateFlow<OilPriceUiState>(OilPriceUiState.Loading)
@@ -68,7 +67,7 @@ class OilPriceViewModel : ViewModel() {
         fetchJob = viewModelScope.launch {
             val encodedProvince = URLEncoder.encode(province, StandardCharsets.UTF_8.name())
             when (val result = RetrofitClient.publicApi.fetchFirstParsed(
-                urls = apiEndpoints.map { it.url(encodedProvince) },
+                urls = apiEndpoints.map { "$it?region=$encodedProvince" },
                 parse = { _, body -> parseResponse(body) }
             )) {
                 is FallbackFetchResult.Success -> {
@@ -89,12 +88,6 @@ class OilPriceViewModel : ViewModel() {
                 }
             }
         }
-    }
-
-    private data class OilPriceEndpoint(
-        val baseUrl: String
-    ) {
-        fun url(encodedRegion: String): String = "$baseUrl?region=$encodedRegion"
     }
 
     private data class ParsedOilPrice(
