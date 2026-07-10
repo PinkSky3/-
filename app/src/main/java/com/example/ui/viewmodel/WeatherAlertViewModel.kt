@@ -136,7 +136,7 @@ class WeatherAlertViewModel : ViewModel() {
     private fun String.encodeUrl(): String = URLEncoder.encode(this, "UTF-8")
 
     companion object {
-        private const val WEATHER_URL = "https://uapis.cn/api/v1/misc/weather?extended=true&forecast=true&hourly=true&minutely=true"
+        private const val WEATHER_URL = "https://uapis.cn/api/v1/misc/weather?extended=true&forecast=true&minutely=true"
         private const val CACHE_TTL_MILLIS = 5 * 60 * 1000L
     }
 }
