@@ -2,7 +2,9 @@ package com.example.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.api.FallbackFetchResult
 import com.example.data.api.RetrofitClient
+import com.example.data.api.fetchFirstParsed
 import com.example.data.model.HotPlatform
 import com.example.data.model.HotSearchItem
 import kotlinx.coroutines.Job
@@ -72,34 +74,23 @@ class HotSearchViewModel : ViewModel() {
         val endpoints = getFallbackEndpoints(platform)
 
         fetchJob = viewModelScope.launch {
-            val errors = mutableListOf<String>()
-
-            for (endpoint in endpoints) {
-                try {
-                    val response = RetrofitClient.rawApi.fetch(endpoint)
-                    if (response.isSuccessful && response.body() != null) {
-                        val bodyString = response.body()!!.string()
-                        val items = extractListFromJson(bodyString)
-                        if (items.isNotEmpty()) {
-                            rawItems = items
-                            val formattedTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-                            fetchedTime = "$formattedTime | 源: ${getHostName(endpoint)}"
-                            applyFilter()
-                            return@launch
-                        } else {
-                            errors += "节点(${getHostName(endpoint)})解析空"
-                        }
-                    } else {
-                        errors += "节点(${getHostName(endpoint)})错误: ${response.code()}"
-                    }
-                } catch (e: Exception) {
-                    errors += "节点(${getHostName(endpoint)})异常: ${e.localizedMessage ?: e.message ?: "未知"}"
+            when (val result = RetrofitClient.rawApi.fetchFirstParsed(
+                urls = endpoints,
+                parse = { _, body -> extractListFromJson(body).takeIf { it.isNotEmpty() } }
+            )) {
+                is FallbackFetchResult.Success -> {
+                    rawItems = result.value
+                    val formattedTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+                    fetchedTime = "$formattedTime | 源: ${getHostName(result.url)}"
+                    applyFilter()
+                }
+                is FallbackFetchResult.Failure -> {
+                    val message = result.errors.joinToString("\n") {
+                        "节点(${getHostName(it.url)})失败: ${it.reason}"
+                    }.ifBlank { "数据获取失败，所有节点均不可用。" }
+                    _uiState.value = UiState.Error(message)
                 }
             }
-
-            _uiState.value = UiState.Error(
-                errors.joinToString("\n").ifBlank { "数据获取失败，所有节点均不可用。" }
-            )
         }
     }
 

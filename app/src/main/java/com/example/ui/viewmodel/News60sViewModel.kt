@@ -2,7 +2,9 @@ package com.example.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.api.FallbackFetchResult
 import com.example.data.api.RetrofitClient
+import com.example.data.api.fetchFirstParsed
 import com.example.data.model.News60sRootResponse
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -42,38 +44,23 @@ class News60sViewModel : ViewModel() {
     private fun fetchNews() {
         _uiState.value = News60sUiState.Loading
         viewModelScope.launch {
-            var lastError: String? = null
-            try {
-                for (base in apiBases) {
-                    try {
-                        val response = RetrofitClient.rawApi.fetch("$base/v2/60s")
-                        if (response.isSuccessful) {
-                            val body = response.body()?.string()
-                            if (body != null) {
-                                val parsed = parseResponse(body)
-                                if (parsed != null && parsed.newsList.isNotEmpty()) {
-                                    _uiState.value = News60sUiState.Success(
-                                        newsList = parsed.newsList,
-                                        updateTime = parsed.updateTime
-                                    )
-                                    return@launch
-                                }
-                                lastError = "\u63A5\u53E3\u8FD4\u56DE\u7A7A\u65B0\u95FB: $base"
-                            }
-                        } else {
-                            lastError = "HTTP ${response.code()}: $base"
-                        }
-                    } catch (e: Exception) {
-                        lastError = "$base ${e.localizedMessage ?: e.message ?: "\u672A\u77E5\u9519\u8BEF"}"
-                    }
+            when (val result = RetrofitClient.rawApi.fetchFirstParsed(
+                urls = apiBases.map { "$it/v2/60s" },
+                parse = { _, body -> parseResponse(body) }
+            )) {
+                is FallbackFetchResult.Success -> {
+                    _uiState.value = News60sUiState.Success(
+                        newsList = result.value.newsList,
+                        updateTime = result.value.updateTime
+                    )
                 }
-                _uiState.value = News60sUiState.Error(
-                    "60S\u65B0\u95FB\u83B7\u53D6\u5931\u8D25\uFF0C\u5DF2\u5C1D\u8BD5\u591A\u4E2A\u516C\u5171\u5B9E\u4F8B${lastError?.let { "\uFF1A$it" } ?: ""}"
-                )
-            } catch (e: Exception) {
-                _uiState.value = News60sUiState.Error(
-                    "60S\u63A5\u53E3\u5F02\u5E38: ${e.localizedMessage ?: e.message ?: "\u672A\u77E5\u9519\u8BEF"}"
-                )
+                is FallbackFetchResult.Failure -> {
+                    val lastError = result.errors.lastOrNull()
+                    val detail = lastError?.let { "\uFF1A${it.url} ${it.reason}" }.orEmpty()
+                    _uiState.value = News60sUiState.Error(
+                        "60S\u65B0\u95FB\u83B7\u53D6\u5931\u8D25\uFF0C\u5DF2\u5C1D\u8BD5\u591A\u4E2A\u516C\u5171\u5B9E\u4F8B$detail"
+                    )
+                }
             }
         }
     }

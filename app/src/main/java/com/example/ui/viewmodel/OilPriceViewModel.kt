@@ -2,7 +2,9 @@ package com.example.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.api.FallbackFetchResult
 import com.example.data.api.RetrofitClient
+import com.example.data.api.fetchFirstParsed
 import com.example.data.model.OilPriceRootResponse
 import com.example.data.model.OilPriceEntry
 import com.example.data.model.PROVINCES
@@ -64,41 +66,27 @@ class OilPriceViewModel : ViewModel() {
         val province = _selectedProvince.value
 
         fetchJob = viewModelScope.launch {
-            var lastError: String? = null
-            try {
-                val encodedProvince = URLEncoder.encode(province, StandardCharsets.UTF_8.name())
-                for (endpoint in apiEndpoints) {
-                    try {
-                        val response = RetrofitClient.rawApi.fetch(endpoint.url(encodedProvince))
-                        if (response.isSuccessful) {
-                            val body = response.body()?.string()
-                            if (body != null) {
-                                val parsed = parseResponse(body)
-                                if (parsed != null && parsed.entries.isNotEmpty()) {
-                                    _uiState.value = OilPriceUiState.Success(
-                                        province = parsed.province ?: province,
-                                        entries = parsed.entries,
-                                        updateTime = parsed.updateTime,
-                                        nextUpdateTime = parsed.nextUpdateTime
-                                    )
-                                    return@launch
-                                }
-                                lastError = "\u63A5\u53E3\u8FD4\u56DE\u7A7A\u6CB9\u4EF7: ${endpoint.baseUrl}"
-                            }
-                        } else {
-                            lastError = "HTTP ${response.code()}: ${endpoint.baseUrl}"
-                        }
-                    } catch (e: Exception) {
-                        lastError = "${endpoint.baseUrl} ${e.localizedMessage ?: e.message ?: "\u672A\u77E5\u9519\u8BEF"}"
-                    }
+            val encodedProvince = URLEncoder.encode(province, StandardCharsets.UTF_8.name())
+            when (val result = RetrofitClient.rawApi.fetchFirstParsed(
+                urls = apiEndpoints.map { it.url(encodedProvince) },
+                parse = { _, body -> parseResponse(body) }
+            )) {
+                is FallbackFetchResult.Success -> {
+                    val parsed = result.value
+                    _uiState.value = OilPriceUiState.Success(
+                        province = parsed.province ?: province,
+                        entries = parsed.entries,
+                        updateTime = parsed.updateTime,
+                        nextUpdateTime = parsed.nextUpdateTime
+                    )
                 }
-                _uiState.value = OilPriceUiState.Error(
-                    "\u6CB9\u4EF7\u6570\u636E\u83B7\u53D6\u5931\u8D25\uFF0C\u5DF2\u5C1D\u8BD5\u591A\u4E2A\u516C\u5171\u5B9E\u4F8B${lastError?.let { "\uFF1A$it" } ?: ""}"
-                )
-            } catch (e: Exception) {
-                _uiState.value = OilPriceUiState.Error(
-                    "\u6CB9\u4EF7\u63A5\u53E3\u5F02\u5E38: ${e.localizedMessage ?: e.message ?: "\u672A\u77E5\u9519\u8BEF"}"
-                )
+                is FallbackFetchResult.Failure -> {
+                    val lastError = result.errors.lastOrNull()
+                    val detail = lastError?.let { "\uFF1A${it.url} ${it.reason}" }.orEmpty()
+                    _uiState.value = OilPriceUiState.Error(
+                        "\u6CB9\u4EF7\u6570\u636E\u83B7\u53D6\u5931\u8D25\uFF0C\u5DF2\u5C1D\u8BD5\u591A\u4E2A\u516C\u5171\u5B9E\u4F8B$detail"
+                    )
+                }
             }
         }
     }

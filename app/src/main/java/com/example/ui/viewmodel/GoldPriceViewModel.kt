@@ -2,7 +2,9 @@ package com.example.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.api.FallbackFetchResult
 import com.example.data.api.RetrofitClient
+import com.example.data.api.fetchFirstParsed
 import com.example.data.model.GoldBankRecycleEntry
 import com.example.data.model.GoldBrandEntry
 import com.example.data.model.GoldMarketEntry
@@ -64,27 +66,26 @@ class GoldPriceViewModel : ViewModel() {
     }
 
     private suspend fun fetchMainGoldData(): GoldPriceSnapshot? {
-        val providers = listOf(
+        val providers = mapOf(
             "https://tmini.net/api/gold-price?type=json" to ::parseTmini,
             "https://api.freejk.com/shuju/jinjia/" to ::parseFreejk
         )
-        for ((url, parser) in providers) {
-            try {
-                val body = RetrofitClient.rawApi.fetch(url).body()?.string() ?: continue
-                parser(body)?.let { return it }
-            } catch (_: Exception) {
-            }
+        return when (val result = RetrofitClient.rawApi.fetchFirstParsed(
+            urls = providers.keys,
+            parse = { url, body -> providers.getValue(url)(body) }
+        )) {
+            is FallbackFetchResult.Success -> result.value
+            is FallbackFetchResult.Failure -> null
         }
-        return null
     }
 
     private suspend fun fetchSupplementaryGoldData(): SupplementaryGoldData {
-        return try {
-            val body = RetrofitClient.rawApi.fetch("https://v2.xxapi.cn/api/goldprice").body()?.string()
-                ?: return SupplementaryGoldData()
-            parseXxapi(body)
-        } catch (_: Exception) {
-            SupplementaryGoldData()
+        return when (val result = RetrofitClient.rawApi.fetchFirstParsed(
+            urls = listOf("https://v2.xxapi.cn/api/goldprice"),
+            parse = { _, body -> parseXxapi(body) }
+        )) {
+            is FallbackFetchResult.Success -> result.value
+            is FallbackFetchResult.Failure -> SupplementaryGoldData()
         }
     }
 
