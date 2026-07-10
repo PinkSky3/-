@@ -19,6 +19,16 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+private val DAILY_HOT_MIRRORS = listOf(
+    "https://dailyhotapi.3yu3.top",
+    "https://dailyhot.api.lkwplus.com"
+)
+private val NESTED_ARRAY_KEYS = listOf("data", "list", "result", "news", "hotList", "hot", "items", "routes")
+private val TITLE_KEYS = listOf("title", "name", "keyword", "word", "hotword", "text", "content", "topic_name")
+private val URL_KEYS = listOf("url", "link", "mobileUrl", "href", "short_url")
+private val DESCRIPTION_KEYS = listOf("desc", "description", "summary", "detail", "note")
+private val HOT_VALUE_KEYS = listOf("hot", "score", "index", "hotValue", "num", "hot_score", "search_volume")
+
 sealed interface UiState {
     object Loading : UiState
     data class Success(
@@ -96,10 +106,6 @@ class HotSearchViewModel : ViewModel() {
 
     private fun getFallbackEndpoints(platform: HotPlatform): List<String> {
         val list = mutableListOf<String>()
-        val dailyHotMirrors = listOf(
-            "https://dailyhotapi.3yu3.top",
-            "https://dailyhot.api.lkwplus.com"
-        )
 
         when (platform) {
             HotPlatform.WEIBO -> {
@@ -120,38 +126,34 @@ class HotSearchViewModel : ViewModel() {
             else -> {}
         }
 
-        for (mirror in dailyHotMirrors) {
+        for (mirror in DAILY_HOT_MIRRORS) {
             list.add("$mirror/${platform.key}")
         }
         return list
     }
 
     private fun extractListFromJson(jsonString: String): List<HotSearchItem> {
-        val items = mutableListOf<HotSearchItem>()
-        try {
+        return try {
             val rootStr = jsonString.trim()
-            if (rootStr.startsWith("[")) {
-                val jsonArray = JSONArray(rootStr)
-                items.addAll(parseJsonArray(jsonArray))
-            } else if (rootStr.startsWith("{")) {
-                val rootObj = JSONObject(rootStr)
-                val array = findDeepestArray(rootObj)
-                if (array != null) {
-                    items.addAll(parseJsonArray(array))
-                }
+            when {
+                rootStr.startsWith("[") -> parseJsonArray(JSONArray(rootStr))
+                rootStr.startsWith("{") -> findDeepestArray(JSONObject(rootStr))
+                    ?.let(::parseJsonArray)
+                    .orEmpty()
+                else -> emptyList()
             }
         } catch (e: Exception) {
             e.printStackTrace()
+            emptyList()
         } catch (e: StackOverflowError) {
             System.err.println("JSON too deeply nested, skipping")
+            emptyList()
         }
-        return items
     }
 
     private fun findDeepestArray(obj: JSONObject, depth: Int = 0): JSONArray? {
         if (depth > 20) return null
-        val knownKeys = listOf("data", "list", "result", "news", "hotList", "hot", "items", "routes")
-        for (key in knownKeys) {
+        for (key in NESTED_ARRAY_KEYS) {
             if (obj.has(key)) {
                 val value = obj.get(key)
                 if (value is JSONArray && value.length() > 0) return value
@@ -175,11 +177,11 @@ class HotSearchViewModel : ViewModel() {
         for (i in 0 until array.length()) {
             val element = array.get(i)
             if (element is JSONObject) {
-                val title = extractStringExt(element, listOf("title", "name", "keyword", "word", "hotword", "text", "content", "topic_name"))
+                val title = extractStringExt(element, TITLE_KEYS)
                 if (title.isNullOrBlank()) continue
-                val url = extractStringExt(element, listOf("url", "link", "mobileUrl", "href", "short_url"))
-                val desc = extractStringExt(element, listOf("desc", "description", "summary", "detail", "note"))
-                val hotStr = extractStringExt(element, listOf("hot", "score", "index", "hotValue", "num", "hot_score", "search_volume"))
+                val url = extractStringExt(element, URL_KEYS)
+                val desc = extractStringExt(element, DESCRIPTION_KEYS)
+                val hotStr = extractStringExt(element, HOT_VALUE_KEYS)
                 list.add(HotSearchItem(title = title, url = url, desc = desc, hot = hotStr))
             } else if (element is String) {
                 list.add(HotSearchItem(title = element, url = null))
