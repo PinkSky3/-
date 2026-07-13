@@ -49,7 +49,7 @@ class UpdateRepositoryTest {
             UpdateCheckResult.NoUpdate,
             manifest(
                 version = "1.4.0",
-                downloadUrl = "https://github.com/PinkSky3/DailyHot-Android/releases/download/v1.4.0/app-release.apk"
+                downloadUrl = "https://cdn.jsdelivr.net/gh/PinkSky3/DailyHot-Android@release-channel/app-release.apk"
             ).toUpdateCheckResult("1.3.1")
         )
     }
@@ -69,7 +69,8 @@ class UpdateRepositoryTest {
     private fun manifest(
         version: String,
         channel: String = "stable",
-        downloadUrl: String = "https://github.com/PinkSky3/DailyHot-Android/releases/download/v$version/JuHeZhiXun_ver$version.apk",
+        downloadUrl: String = "https://cdn.jsdelivr.net/gh/PinkSky3/DailyHot-Android@release-channel/" +
+            java.net.URLEncoder.encode("聚合智讯_ver$version.apk", Charsets.UTF_8.name()),
         releasePageUrl: String = "https://github.com/PinkSky3/DailyHot-Android/releases/tag/v$version"
     ) = UpdateManifest(
         channel = channel,

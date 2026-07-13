@@ -10,7 +10,7 @@
 - 清理未使用的依赖、字段、图标和调试组件，并启用 Release 压缩与资源收缩。
 - 加入单元测试和 Release APK 的持续集成验证。
 - 云端只输出经过验签的 Release APK，并统一命名为 `聚合智讯_ver版本号.apk`。
-- 启动时通过 jsDelivr 检查确认后的稳定版本，Raw GitHub 自动兜底，兼顾大陆访问。
+- 启动时通过 jsDelivr 检查并下载确认后的稳定版本，Raw GitHub 自动兜底更新清单，兼顾大陆访问。
 - 更新清单会校验正式 Release 地址和版本化 APK，自动忽略 Actions 构建、草稿版和预览版。
 - 加入草稿候选与人工确认闸门，未确认的版本不会进入 `releases/latest`。
 

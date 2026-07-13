@@ -18,8 +18,8 @@ class UpdateRepository(
 ) {
     private val manifestAdapter = RetrofitClient.moshi.adapter(UpdateManifest::class.java)
     private val manifestUrls = listOf(
-        "https://cdn.jsdelivr.net/gh/PinkSky3/DailyHot-Android@main/update.json",
-        "https://raw.githubusercontent.com/PinkSky3/DailyHot-Android/main/update.json"
+        "https://cdn.jsdelivr.net/gh/PinkSky3/DailyHot-Android@release-channel/update.json",
+        "https://raw.githubusercontent.com/PinkSky3/DailyHot-Android/release-channel/update.json"
     )
 
     suspend fun check(currentVersion: String): UpdateCheckResult {
@@ -43,9 +43,12 @@ internal fun UpdateManifest.toUpdateCheckResult(currentVersion: String): UpdateC
     val normalizedVersion = releaseVersion.toString()
     val expectedReleasePage =
         "https://github.com/PinkSky3/DailyHot-Android/releases/tag/v$normalizedVersion"
+    val encodedApkName = java.net.URLEncoder.encode(
+        "聚合智讯_ver$normalizedVersion.apk",
+        Charsets.UTF_8.name()
+    )
     val expectedDownloadUrl =
-        "https://github.com/PinkSky3/DailyHot-Android/releases/download/v$normalizedVersion/" +
-            "JuHeZhiXun_ver$normalizedVersion.apk"
+        "https://cdn.jsdelivr.net/gh/PinkSky3/DailyHot-Android@release-channel/$encodedApkName"
     if (releasePageUrl != expectedReleasePage) return UpdateCheckResult.NoUpdate
     if (downloadUrl != expectedDownloadUrl) return UpdateCheckResult.NoUpdate
 
