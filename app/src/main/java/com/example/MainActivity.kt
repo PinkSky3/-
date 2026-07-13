@@ -13,6 +13,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.screens.DailyHotDashboard
+import com.example.ui.screens.BACKUP_UPDATE_PASSWORD
+import com.example.ui.screens.BACKUP_UPDATE_URL
+import com.example.ui.screens.copyToClipboard
 import com.example.ui.screens.openExternalUrl
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.viewmodel.GoldPriceViewModel
@@ -49,6 +52,11 @@ class MainActivity : ComponentActivity() {
           onDownloadUpdate = { url ->
             updateViewModel.dismissUpdate()
             openExternalUrl(this@MainActivity, url)
+          },
+          onBackupDownload = {
+            updateViewModel.dismissUpdate()
+            copyToClipboard(this@MainActivity, BACKUP_UPDATE_PASSWORD)
+            openExternalUrl(this@MainActivity, BACKUP_UPDATE_URL)
           },
           modifier = Modifier.fillMaxSize()
         )

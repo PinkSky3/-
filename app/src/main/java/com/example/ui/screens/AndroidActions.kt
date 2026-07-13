@@ -5,6 +5,9 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 
+internal const val BACKUP_UPDATE_URL = "https://wwarj.lanzout.com/b0zkv91bi"
+internal const val BACKUP_UPDATE_PASSWORD = "52pj"
+
 internal fun copyToClipboard(context: Context, text: String) {
     try {
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager

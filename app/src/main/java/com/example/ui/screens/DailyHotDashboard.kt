@@ -105,6 +105,7 @@ fun DailyHotDashboard(
     availableUpdate: AppUpdate? = null,
     onDismissUpdate: () -> Unit = {},
     onDownloadUpdate: (String) -> Unit = {},
+    onBackupDownload: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val activePlatform by hotViewModel.activePlatform.collectAsState()
@@ -301,7 +302,8 @@ fun DailyHotDashboard(
         UpdateAvailableDialog(
             update = update,
             onDismiss = onDismissUpdate,
-            onDownload = { onDownloadUpdate(update.downloadUrl) }
+            onDownload = { onDownloadUpdate(update.downloadUrl) },
+            onBackupDownload = onBackupDownload
         )
     }
 }
