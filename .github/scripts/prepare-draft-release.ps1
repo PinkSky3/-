@@ -18,7 +18,8 @@ if ($Version -notmatch '^\d+\.\d+\.\d+$') {
 $repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..\..')).Path
 Set-Location -LiteralPath $repositoryRoot
 $resolvedApk = (Resolve-Path -LiteralPath $ApkPath).Path
-$displayName = "聚合智讯_ver$Version.apk"
+$appDisplayName = "$([char]0x805A)$([char]0x5408)$([char]0x667A)$([char]0x8BAF)"
+$displayName = "${appDisplayName}_ver$Version.apk"
 if ([IO.Path]::GetFileName($resolvedApk) -cne $displayName) {
     throw "APK must be named '$displayName'"
 }
@@ -37,7 +38,7 @@ $changelog = Get-Content -LiteralPath 'CHANGELOG.md' -Encoding UTF8
 $escapedVersion = [regex]::Escape($Version)
 $sectionStart = -1
 for ($index = 0; $index -lt $changelog.Count; $index++) {
-    if ($changelog[$index] -match "^##\s+$escapedVersion(?:\s|（|\()") {
+    if ($changelog[$index] -match "^##\s+$escapedVersion(?:\s|\p{P})") {
         $sectionStart = $index
         break
     }
@@ -61,7 +62,7 @@ if ([string]::IsNullOrWhiteSpace(($releaseNotes -join "`n"))) {
 $notesPath = Join-Path $env:RUNNER_TEMP "release-notes-$Version.md"
 Set-Content -LiteralPath $notesPath -Value $releaseNotes -Encoding UTF8
 $tag = "v$Version"
-$title = "聚合智讯 $Version"
+$title = "$appDisplayName $Version"
 
 $existingJson = & gh release view $tag --json isDraft,tagName 2>$null
 if ($LASTEXITCODE -eq 0) {

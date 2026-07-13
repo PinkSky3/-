@@ -102,8 +102,11 @@ fun DailyHotDashboard(
     weatherAlertViewModel: WeatherAlertViewModel,
     isDarkTheme: Boolean = false,
     onToggleTheme: () -> Unit = {},
+    versionLabel: String = "",
+    onCheckUpdate: () -> Unit = {},
     availableUpdate: AppUpdate? = null,
     onDismissUpdate: () -> Unit = {},
+    onIgnoreUpdate: () -> Unit = {},
     onDownloadUpdate: (String) -> Unit = {},
     onBackupDownload: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -173,6 +176,8 @@ fun DailyHotDashboard(
                     mode = mode,
                     isDarkTheme = isDarkTheme,
                     onToggleTheme = onToggleTheme,
+                    versionLabel = versionLabel,
+                    onCheckUpdate = onCheckUpdate,
                     onModeChange = { mode = it },
                     onRefresh = {
                         isRotating = true
@@ -302,6 +307,7 @@ fun DailyHotDashboard(
         UpdateAvailableDialog(
             update = update,
             onDismiss = onDismissUpdate,
+            onIgnore = onIgnoreUpdate,
             onDownload = { onDownloadUpdate(update.downloadUrl) },
             onBackupDownload = onBackupDownload
         )
@@ -314,6 +320,8 @@ fun HeaderSection(
     mode: DashboardMode,
     isDarkTheme: Boolean = false,
     onToggleTheme: () -> Unit = {},
+    versionLabel: String = "",
+    onCheckUpdate: () -> Unit = {},
     onModeChange: (DashboardMode) -> Unit,
     onRefresh: () -> Unit,
     rotationAngle: Float,
@@ -341,6 +349,21 @@ fun HeaderSection(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.width(6.dp))
+                if (versionLabel.isNotBlank()) {
+                    Surface(
+                        onClick = onCheckUpdate,
+                        shape = RoundedCornerShape(6.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant
+                    ) {
+                        Text(
+                            text = "v$versionLabel",
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(6.dp))
+                }
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(6.dp))

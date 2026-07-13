@@ -31,7 +31,8 @@ if (-not $versionMatch.Success) {
 }
 
 $version = $versionMatch.Groups[1].Value
-$fileName = "聚合智讯_ver$version.apk"
+$appDisplayName = "$([char]0x805A)$([char]0x5408)$([char]0x667A)$([char]0x8BAF)"
+$fileName = "${appDisplayName}_ver$version.apk"
 $targetApk = Join-Path (Split-Path -Parent $sourceApk.Path) $fileName
 $apksigner = Get-ChildItem -LiteralPath "$env:ANDROID_HOME/build-tools" -Recurse -File -Filter 'apksigner' |
     Sort-Object FullName -Descending |

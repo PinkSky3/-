@@ -26,6 +26,7 @@ import com.example.data.model.AppUpdate
 internal fun UpdateAvailableDialog(
     update: AppUpdate,
     onDismiss: () -> Unit,
+    onIgnore: () -> Unit,
     onDownload: () -> Unit,
     onBackupDownload: () -> Unit
 ) {
@@ -94,8 +95,13 @@ internal fun UpdateAvailableDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("稍后")
+            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                TextButton(onClick = onIgnore) {
+                    Text("忽略此版本")
+                }
+                TextButton(onClick = onDismiss) {
+                    Text("稍后")
+                }
             }
         }
     )

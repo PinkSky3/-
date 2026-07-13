@@ -44,7 +44,8 @@ if ($latest.tag_name -ne $tag -or $latest.draft -or $latest.prerelease) {
 }
 
 $expectedAssetName = "JuHeZhiXun_ver$Version.apk"
-$expectedAssetLabel = "聚合智讯_ver$Version.apk"
+$appDisplayName = "$([char]0x805A)$([char]0x5408)$([char]0x667A)$([char]0x8BAF)"
+$expectedAssetLabel = "${appDisplayName}_ver$Version.apk"
 $asset = $latest.assets | Where-Object {
     $_.name -eq $expectedAssetName -and $_.label -eq $expectedAssetLabel
 } | Select-Object -First 1
@@ -66,7 +67,7 @@ try {
     $manifest = [ordered]@{
         channel = 'stable'
         version = $Version
-        title = if ([string]::IsNullOrWhiteSpace($latest.name)) { "聚合智讯 $Version" } else { $latest.name }
+        title = if ([string]::IsNullOrWhiteSpace($latest.name)) { "$appDisplayName $Version" } else { $latest.name }
         notes = if ($null -eq $latest.body) { '' } else { $latest.body.Trim() }
         downloadUrl = "https://cdn.jsdelivr.net/gh/PinkSky3/DailyHot-Android@release-channel/$encodedDisplayName"
         releasePageUrl = $latest.html_url
