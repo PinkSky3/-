@@ -1,11 +1,37 @@
 package com.example.data.update
 
+import com.example.data.api.EndpointFailure
+import com.example.data.api.FallbackFetchResult
 import com.example.data.model.UpdateManifest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class UpdateRepositoryTest {
+    @Test
+    fun `missing stable channel means current version is latest`() {
+        val result = FallbackFetchResult.Failure(
+            listOf(
+                EndpointFailure("https://cdn.example/update.json", "HTTP 404"),
+                EndpointFailure("https://raw.example/update.json", "HTTP 404")
+            )
+        ).toUpdateCheckResult()
+
+        assertEquals(UpdateCheckResult.NoUpdate, result)
+    }
+
+    @Test
+    fun `network failure remains unavailable`() {
+        val result = FallbackFetchResult.Failure(
+            listOf(
+                EndpointFailure("https://cdn.example/update.json", "timeout"),
+                EndpointFailure("https://raw.example/update.json", "HTTP 404")
+            )
+        ).toUpdateCheckResult()
+
+        assertEquals(UpdateCheckResult.Unavailable, result)
+    }
+
     @Test
     fun `newer confirmed stable manifest is available`() {
         val result = manifest(version = "1.4.0").toUpdateCheckResult("1.3.1")

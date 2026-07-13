@@ -1,6 +1,7 @@
 package com.example.data.update
 
 import com.example.data.api.FallbackFetchResult
+import com.example.data.api.EndpointFailure
 import com.example.data.api.PublicApiService
 import com.example.data.api.RetrofitClient
 import com.example.data.api.fetchFirstParsed
@@ -28,10 +29,17 @@ class UpdateRepository(
             parse = { _, body -> runCatching { manifestAdapter.fromJson(body) }.getOrNull() }
         )) {
             is FallbackFetchResult.Success -> result.value.toUpdateCheckResult(currentVersion)
-            is FallbackFetchResult.Failure -> UpdateCheckResult.Unavailable
+            is FallbackFetchResult.Failure -> result.toUpdateCheckResult()
         }
     }
 }
+
+internal fun FallbackFetchResult.Failure.toUpdateCheckResult(): UpdateCheckResult =
+    if (errors.isNotEmpty() && errors.all { it.reason == "HTTP 404" }) {
+        UpdateCheckResult.NoUpdate
+    } else {
+        UpdateCheckResult.Unavailable
+    }
 
 internal fun UpdateManifest.toUpdateCheckResult(currentVersion: String): UpdateCheckResult {
     if (channel != "stable") return UpdateCheckResult.NoUpdate
