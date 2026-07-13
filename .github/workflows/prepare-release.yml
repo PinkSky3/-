@@ -1,22 +1,28 @@
-name: Android CI
+name: Prepare Draft Release
 
 on:
-  push:
-    branches: [ "main", "master" ]
-  pull_request:
-    branches: [ "main", "master" ]
   workflow_dispatch:
+    inputs:
+      version:
+        description: Stable version matching app/build.gradle.kts
+        required: true
+        type: string
+
+permissions:
+  contents: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  build:
+  prepare:
     runs-on: ubuntu-24.04
 
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
+      with:
+        ref: main
 
     - name: Set up JDK 21
       uses: actions/setup-java@v4
@@ -52,16 +58,20 @@ jobs:
         & chmod '+x' 'gradlew'
         if ($LASTEXITCODE -ne 0) { throw 'Unable to make gradlew executable' }
 
-    - name: Test and build signed Release APK
+    - name: Build signed release candidate
       id: build
       shell: pwsh
       run: |
         $ErrorActionPreference = 'Stop'
         & '.github/scripts/build-signed-release.ps1'
 
-    - name: Upload signed Release APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ steps.build.outputs.apk_name }}
-        path: ${{ steps.build.outputs.apk_path }}
-        if-no-files-found: error
+    - name: Prepare draft release
+      shell: pwsh
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        $ErrorActionPreference = 'Stop'
+        & '.github/scripts/prepare-draft-release.ps1' `
+          -Version '${{ inputs.version }}' `
+          -ApkPath '${{ steps.build.outputs.apk_path }}' `
+          -TargetCommit '${{ github.sha }}'

@@ -64,6 +64,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
+import com.example.data.model.AppUpdate
 import com.example.data.model.HotPlatform
 import com.example.data.model.PlatformCategory
 import com.example.ui.viewmodel.GoldPriceViewModel
@@ -101,6 +102,9 @@ fun DailyHotDashboard(
     weatherAlertViewModel: WeatherAlertViewModel,
     isDarkTheme: Boolean = false,
     onToggleTheme: () -> Unit = {},
+    availableUpdate: AppUpdate? = null,
+    onDismissUpdate: () -> Unit = {},
+    onDownloadUpdate: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val activePlatform by hotViewModel.activePlatform.collectAsState()
@@ -291,6 +295,14 @@ fun DailyHotDashboard(
             }
 
         }
+    }
+
+    availableUpdate?.let { update ->
+        UpdateAvailableDialog(
+            update = update,
+            onDismiss = onDismissUpdate,
+            onDownload = { onDownloadUpdate(update.downloadUrl) }
+        )
     }
 }
 

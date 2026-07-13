@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 
 internal fun copyToClipboard(context: Context, text: String) {
@@ -24,5 +25,13 @@ internal fun shareText(context: Context, text: String) {
         context.startActivity(Intent.createChooser(intent, "\u53D1\u9001\u70ED\u641C\u81F3"))
     } catch (_: Exception) {
         Toast.makeText(context, "\u5206\u4EAB\u5931\u8D25", Toast.LENGTH_SHORT).show()
+    }
+}
+
+internal fun openExternalUrl(context: Context, url: String) {
+    try {
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+    } catch (_: Exception) {
+        Toast.makeText(context, "无法打开下载地址", Toast.LENGTH_SHORT).show()
     }
 }
