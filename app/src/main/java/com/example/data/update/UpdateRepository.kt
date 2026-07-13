@@ -1,10 +1,11 @@
 package com.example.data.update
 
+import com.example.data.api.FallbackFetchResult
 import com.example.data.api.PublicApiService
 import com.example.data.api.RetrofitClient
+import com.example.data.api.fetchFirstParsed
 import com.example.data.model.AppUpdate
-import com.example.data.model.GitHubRelease
-import kotlinx.coroutines.CancellationException
+import com.example.data.model.UpdateManifest
 
 sealed interface UpdateCheckResult {
     data class Available(val update: AppUpdate) : UpdateCheckResult
@@ -15,44 +16,46 @@ sealed interface UpdateCheckResult {
 class UpdateRepository(
     private val api: PublicApiService = RetrofitClient.publicApi
 ) {
+    private val manifestAdapter = RetrofitClient.moshi.adapter(UpdateManifest::class.java)
+    private val manifestUrls = listOf(
+        "https://cdn.jsdelivr.net/gh/PinkSky3/DailyHot-Android@main/update.json",
+        "https://raw.githubusercontent.com/PinkSky3/DailyHot-Android/main/update.json"
+    )
+
     suspend fun check(currentVersion: String): UpdateCheckResult {
-        return try {
-            val response = api.fetchLatestGitHubRelease()
-            if (response.code() == 404) return UpdateCheckResult.NoUpdate
-            if (!response.isSuccessful) return UpdateCheckResult.Unavailable
-            response.body()?.toUpdateCheckResult(currentVersion) ?: UpdateCheckResult.Unavailable
-        } catch (exception: CancellationException) {
-            throw exception
-        } catch (_: Exception) {
-            UpdateCheckResult.Unavailable
+        return when (val result = api.fetchFirstParsed(
+            urls = manifestUrls,
+            parse = { _, body -> runCatching { manifestAdapter.fromJson(body) }.getOrNull() }
+        )) {
+            is FallbackFetchResult.Success -> result.value.toUpdateCheckResult(currentVersion)
+            is FallbackFetchResult.Failure -> UpdateCheckResult.Unavailable
         }
     }
 }
 
-internal fun GitHubRelease.toUpdateCheckResult(currentVersion: String): UpdateCheckResult {
-    if (draft || prerelease) return UpdateCheckResult.NoUpdate
+internal fun UpdateManifest.toUpdateCheckResult(currentVersion: String): UpdateCheckResult {
+    if (channel != "stable") return UpdateCheckResult.NoUpdate
 
-    val releaseVersion = SemanticVersion.parse(tagName) ?: return UpdateCheckResult.NoUpdate
+    val releaseVersion = SemanticVersion.parse(version) ?: return UpdateCheckResult.NoUpdate
     val installedVersion = SemanticVersion.parse(currentVersion) ?: return UpdateCheckResult.Unavailable
     if (releaseVersion <= installedVersion) return UpdateCheckResult.NoUpdate
 
-    val version = releaseVersion.toString()
-    val expectedDisplayName = "聚合智讯_ver$version.apk"
-    val expectedGitHubName = "JuHeZhiXun_ver$version.apk"
-    val apk = assets.firstOrNull {
-        (it.name == expectedDisplayName ||
-            (it.name == expectedGitHubName && it.label == expectedDisplayName)) &&
-            it.size > 0 &&
-            it.browserDownloadUrl.startsWith("https://")
-    } ?: return UpdateCheckResult.NoUpdate
+    val normalizedVersion = releaseVersion.toString()
+    val expectedReleasePage =
+        "https://github.com/PinkSky3/DailyHot-Android/releases/tag/v$normalizedVersion"
+    val expectedDownloadUrl =
+        "https://github.com/PinkSky3/DailyHot-Android/releases/download/v$normalizedVersion/" +
+            "JuHeZhiXun_ver$normalizedVersion.apk"
+    if (releasePageUrl != expectedReleasePage) return UpdateCheckResult.NoUpdate
+    if (downloadUrl != expectedDownloadUrl) return UpdateCheckResult.NoUpdate
 
     return UpdateCheckResult.Available(
         AppUpdate(
-            version = version,
-            title = name?.takeIf { it.isNotBlank() } ?: "聚合智讯 $version",
-            notes = body?.trim().orEmpty(),
-            downloadUrl = apk.browserDownloadUrl,
-            releasePageUrl = htmlUrl
+            version = normalizedVersion,
+            title = title.ifBlank { "聚合智讯 $normalizedVersion" },
+            notes = notes.trim(),
+            downloadUrl = downloadUrl,
+            releasePageUrl = releasePageUrl
         )
     )
 }
@@ -68,7 +71,7 @@ internal data class SemanticVersion(
     override fun toString(): String = "$major.$minor.$patch"
 
     companion object {
-        private val stableVersionPattern = Regex("^v?(\\d+)\\.(\\d+)\\.(\\d+)$")
+        private val stableVersionPattern = Regex("^(\\d+)\\.(\\d+)\\.(\\d+)$")
 
         fun parse(value: String): SemanticVersion? {
             val match = stableVersionPattern.matchEntire(value.trim()) ?: return null

@@ -13,4 +13,4 @@ $ErrorActionPreference = 'Stop'
 & '.github/scripts/publish-confirmed-release.ps1' -Version '1.3.1' -ConfirmedByUser
 ```
 
-脚本会把草稿转成稳定正式版，并验证 GitHub 的 `releases/latest` 已指向该版本。应用只读取这个接口，同时再次拒绝草稿版、预览版、非法版本号和名称不匹配的 APK。GitHub 会清洗中文资源文件名，因此 Release 内部使用 `JuHeZhiXun_ver版本号.apk`，界面标签仍显示 `聚合智讯_ver版本号.apk`。
+脚本会把草稿转成稳定正式版，验证 GitHub 的 `releases/latest` 已指向该版本，再更新 `update.json`。应用优先通过 jsDelivr 读取这份稳定清单，Raw GitHub 只作备用；普通 Actions 构建和未确认草稿不会改动清单。GitHub 会清洗中文资源文件名，因此 Release 内部使用 `JuHeZhiXun_ver版本号.apk`，界面标签仍显示 `聚合智讯_ver版本号.apk`。

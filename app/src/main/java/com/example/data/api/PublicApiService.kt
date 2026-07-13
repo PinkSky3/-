@@ -1,12 +1,10 @@
 package com.example.data.api
 
 import com.example.data.model.WeatherAlertResponse
-import com.example.data.model.GitHubRelease
 import kotlinx.coroutines.CancellationException
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.GET
-import retrofit2.http.Headers
 import retrofit2.http.Url
 
 interface PublicApiService {
@@ -15,13 +13,6 @@ interface PublicApiService {
 
     @GET
     suspend fun fetchWeather(@Url url: String): Response<WeatherAlertResponse>
-
-    @Headers(
-        "Accept: application/vnd.github+json",
-        "X-GitHub-Api-Version: 2022-11-28"
-    )
-    @GET("https://api.github.com/repos/PinkSky3/DailyHot-Android/releases/latest")
-    suspend fun fetchLatestGitHubRelease(): Response<GitHubRelease>
 }
 
 internal data class EndpointFailure(

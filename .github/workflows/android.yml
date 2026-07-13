@@ -3,6 +3,8 @@ name: Android CI
 on:
   push:
     branches: [ "main", "master" ]
+    paths-ignore:
+      - "update.json"
   pull_request:
     branches: [ "main", "master" ]
   workflow_dispatch:

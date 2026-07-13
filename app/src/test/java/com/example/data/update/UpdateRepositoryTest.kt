@@ -1,84 +1,82 @@
 package com.example.data.update
 
-import com.example.data.model.GitHubRelease
-import com.example.data.model.GitHubReleaseAsset
+import com.example.data.model.UpdateManifest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class UpdateRepositoryTest {
     @Test
-    fun `newer stable release with matching apk is available`() {
-        val result = release(version = "1.4.0").toUpdateCheckResult("1.3.1")
+    fun `newer confirmed stable manifest is available`() {
+        val result = manifest(version = "1.4.0").toUpdateCheckResult("1.3.1")
 
         assertTrue(result is UpdateCheckResult.Available)
         assertEquals("1.4.0", (result as UpdateCheckResult.Available).update.version)
     }
 
     @Test
-    fun `draft and prerelease never become updates`() {
+    fun `draft and prerelease channels are ignored`() {
         assertEquals(
             UpdateCheckResult.NoUpdate,
-            release(version = "1.4.0", draft = true).toUpdateCheckResult("1.3.1")
+            manifest(version = "1.4.0", channel = "draft").toUpdateCheckResult("1.3.1")
         )
         assertEquals(
             UpdateCheckResult.NoUpdate,
-            release(version = "1.4.0", prerelease = true).toUpdateCheckResult("1.3.1")
+            manifest(version = "1.4.0", channel = "prerelease").toUpdateCheckResult("1.3.1")
         )
     }
 
     @Test
-    fun `action style or mismatched apk is ignored`() {
-        val release = release(
+    fun `action build links are ignored`() {
+        val manifest = manifest(
             version = "1.4.0",
-            assetName = "app-release.apk"
+            downloadUrl = "https://github.com/PinkSky3/DailyHot-Android/actions/runs/123"
         )
 
-        assertEquals(UpdateCheckResult.NoUpdate, release.toUpdateCheckResult("1.3.1"))
+        assertEquals(UpdateCheckResult.NoUpdate, manifest.toUpdateCheckResult("1.3.1"))
     }
 
     @Test
-    fun `github safe apk without the chinese display label is ignored`() {
-        val release = release(
-            version = "1.4.0",
-            assetLabel = null
+    fun `wrong release or apk path is ignored`() {
+        assertEquals(
+            UpdateCheckResult.NoUpdate,
+            manifest(
+                version = "1.4.0",
+                releasePageUrl = "https://github.com/PinkSky3/DailyHot-Android/releases/tag/v1.4.1"
+            ).toUpdateCheckResult("1.3.1")
         )
-
-        assertEquals(UpdateCheckResult.NoUpdate, release.toUpdateCheckResult("1.3.1"))
+        assertEquals(
+            UpdateCheckResult.NoUpdate,
+            manifest(
+                version = "1.4.0",
+                downloadUrl = "https://github.com/PinkSky3/DailyHot-Android/releases/download/v1.4.0/app-release.apk"
+            ).toUpdateCheckResult("1.3.1")
+        )
     }
 
     @Test
-    fun `preview tags and older versions are ignored`() {
+    fun `preview and older versions are ignored`() {
         assertEquals(
             UpdateCheckResult.NoUpdate,
-            release(version = "1.4.0-beta").toUpdateCheckResult("1.3.1")
+            manifest(version = "1.4.0-beta").toUpdateCheckResult("1.3.1")
         )
         assertEquals(
             UpdateCheckResult.NoUpdate,
-            release(version = "1.3.0").toUpdateCheckResult("1.3.1")
+            manifest(version = "1.3.0").toUpdateCheckResult("1.3.1")
         )
     }
 
-    private fun release(
+    private fun manifest(
         version: String,
-        draft: Boolean = false,
-        prerelease: Boolean = false,
-        assetName: String = "JuHeZhiXun_ver$version.apk",
-        assetLabel: String? = "聚合智讯_ver$version.apk"
-    ) = GitHubRelease(
-        tagName = "v$version",
-        name = "聚合智讯 $version",
-        body = "更新内容",
-        htmlUrl = "https://github.com/PinkSky3/DailyHot-Android/releases/tag/v$version",
-        draft = draft,
-        prerelease = prerelease,
-        assets = listOf(
-            GitHubReleaseAsset(
-                name = assetName,
-                label = assetLabel,
-                browserDownloadUrl = "https://github.com/PinkSky3/DailyHot-Android/releases/download/v$version/$assetName",
-                size = 1024
-            )
-        )
+        channel: String = "stable",
+        downloadUrl: String = "https://github.com/PinkSky3/DailyHot-Android/releases/download/v$version/JuHeZhiXun_ver$version.apk",
+        releasePageUrl: String = "https://github.com/PinkSky3/DailyHot-Android/releases/tag/v$version"
+    ) = UpdateManifest(
+        channel = channel,
+        version = version,
+        title = "聚合智讯 $version",
+        notes = "更新内容",
+        downloadUrl = downloadUrl,
+        releasePageUrl = releasePageUrl
     )
 }
