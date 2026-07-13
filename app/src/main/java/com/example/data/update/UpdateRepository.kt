@@ -37,9 +37,11 @@ internal fun GitHubRelease.toUpdateCheckResult(currentVersion: String): UpdateCh
     if (releaseVersion <= installedVersion) return UpdateCheckResult.NoUpdate
 
     val version = releaseVersion.toString()
-    val expectedAssetName = "聚合智讯_ver$version.apk"
+    val expectedDisplayName = "聚合智讯_ver$version.apk"
+    val expectedGitHubName = "JuHeZhiXun_ver$version.apk"
     val apk = assets.firstOrNull {
-        it.name == expectedAssetName &&
+        (it.name == expectedDisplayName ||
+            (it.name == expectedGitHubName && it.label == expectedDisplayName)) &&
             it.size > 0 &&
             it.browserDownloadUrl.startsWith("https://")
     } ?: return UpdateCheckResult.NoUpdate

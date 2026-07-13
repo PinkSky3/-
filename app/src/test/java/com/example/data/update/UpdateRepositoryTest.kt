@@ -38,6 +38,16 @@ class UpdateRepositoryTest {
     }
 
     @Test
+    fun `github safe apk without the chinese display label is ignored`() {
+        val release = release(
+            version = "1.4.0",
+            assetLabel = null
+        )
+
+        assertEquals(UpdateCheckResult.NoUpdate, release.toUpdateCheckResult("1.3.1"))
+    }
+
+    @Test
     fun `preview tags and older versions are ignored`() {
         assertEquals(
             UpdateCheckResult.NoUpdate,
@@ -53,7 +63,8 @@ class UpdateRepositoryTest {
         version: String,
         draft: Boolean = false,
         prerelease: Boolean = false,
-        assetName: String = "聚合智讯_ver$version.apk"
+        assetName: String = "JuHeZhiXun_ver$version.apk",
+        assetLabel: String? = "聚合智讯_ver$version.apk"
     ) = GitHubRelease(
         tagName = "v$version",
         name = "聚合智讯 $version",
@@ -64,6 +75,7 @@ class UpdateRepositoryTest {
         assets = listOf(
             GitHubReleaseAsset(
                 name = assetName,
+                label = assetLabel,
                 browserDownloadUrl = "https://github.com/PinkSky3/DailyHot-Android/releases/download/v$version/$assetName",
                 size = 1024
             )

@@ -18,10 +18,14 @@ if ($Version -notmatch '^\d+\.\d+\.\d+$') {
 $repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..\..')).Path
 Set-Location -LiteralPath $repositoryRoot
 $resolvedApk = (Resolve-Path -LiteralPath $ApkPath).Path
-$expectedName = "聚合智讯_ver$Version.apk"
-if ([IO.Path]::GetFileName($resolvedApk) -cne $expectedName) {
-    throw "APK must be named '$expectedName'"
+$displayName = "聚合智讯_ver$Version.apk"
+if ([IO.Path]::GetFileName($resolvedApk) -cne $displayName) {
+    throw "APK must be named '$displayName'"
 }
+$githubName = "JuHeZhiXun_ver$Version.apk"
+$githubAssetPath = Join-Path $env:RUNNER_TEMP $githubName
+Copy-Item -LiteralPath $resolvedApk -Destination $githubAssetPath -Force
+$assetSpec = "$githubAssetPath#$displayName"
 
 $buildScript = Get-Content -LiteralPath 'app/build.gradle.kts' -Raw -Encoding UTF8
 $versionMatch = [regex]::Match($buildScript, 'versionName\s*=\s*"([^"]+)"')
@@ -65,13 +69,20 @@ if ($LASTEXITCODE -eq 0) {
     if (-not $existing.isDraft) {
         throw "$tag is already published; refusing to overwrite a formal release"
     }
-    & gh release upload $tag $resolvedApk --clobber
+    $existingAssets = (& gh release view $tag --json assets | ConvertFrom-Json).assets
+    foreach ($asset in $existingAssets) {
+        & gh release delete-asset $tag $asset.name --yes
+        if ($LASTEXITCODE -ne 0) {
+            throw "Unable to remove stale draft asset $($asset.name)"
+        }
+    }
+    & gh release upload $tag $assetSpec
     if ($LASTEXITCODE -ne 0) {
         throw 'Unable to replace draft release asset'
     }
     & gh release edit $tag --draft --prerelease=false --title $title --notes-file $notesPath --target $TargetCommit
 } else {
-    & gh release create $tag $resolvedApk --draft --title $title --notes-file $notesPath --target $TargetCommit
+    & gh release create $tag $assetSpec --draft --title $title --notes-file $notesPath --target $TargetCommit
 }
 if ($LASTEXITCODE -ne 0) {
     throw 'Unable to prepare draft release'
